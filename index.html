@@ -503,23 +503,23 @@ const TASAS = [{v:0,t:'Exento (0 %)'},{v:7,t:'7 %'},{v:10,t:'10 %'},{v:15,t:'15 
 
 const CASES = [
   {id:'c1', titulo:'Caso 1 · Venta a una empresa', emisor:'E1',
-   texto:'Ferretería La Práctica le vende a <b>Constructora Ejemplo, S.A.</b> (RUC 155700500-2-2020, DV 33) 10 bolsas de cemento a B/.9.50 cada una. Pago en efectivo.',
+   texto:'Ferretería La Práctica le vende a <b>Constructora Ejemplo, S.A.</b> (contribuyente persona jurídica · RUC 155700500-2-2020 · DV 33 · Calle 50, Ciudad de Panamá · compras@constructora-ejemplo.test): 10 bolsas de cemento (código CEM-01) a B/.9.50 cada una, ITBMS 7 %. Pago en efectivo. Fecha: la de hoy.',
    check:d=>d.emisor==='E1'&&d.tipoDoc==='01'&&d.receptor.tipo==='01'&&norm(d.receptor.ruc)==='155700500-2-2020'&&d.receptor.dv==='33'&&near(d.totales.total,101.65),
    pista:'Subtotal B/.95.00 + ITBMS 7 % (B/.6.65) = B/.101.65. Receptor tipo 01 (contribuyente).'},
   {id:'c2', titulo:'Caso 2 · Consumidor final con producto exento', emisor:'E1',
-   texto:'Una persona compra para su casa 1 martillo a B/.12.00 (7 %) y 2 libras de arroz a B/.0.75 cada una (exento). Pago con tarjeta de débito. No pide factura a nombre de nadie.',
+   texto:'Una persona compra para su casa 1 martillo (código HER-01) a B/.12.00, ITBMS 7 %, y 2 libras de arroz (código ALI-01) a B/.0.75 cada una, exento. Pago con tarjeta de débito. No pide la factura a su nombre: es consumidor final y no hace falta RUC, nombre, dirección ni correo. Fecha: la de hoy.',
    check:d=>d.emisor==='E1'&&d.tipoDoc==='01'&&d.receptor.tipo==='02'&&near(d.totales.total,14.34),
    pista:'Martillo 12.00 + ITBMS 0.84; arroz 1.50 exento. Total B/.14.34. Receptor tipo 02.'},
   {id:'c3', titulo:'Caso 3 · Servicio a un cliente del extranjero', emisor:'E2',
-   texto:'Aula Contable Consultores asesora a <b>Inversiones Andinas S.A.S.</b> de Colombia (identificación NIT-900123456) por B/.1,500.00. El servicio se usa solo en Colombia. Pago por transferencia.',
+   texto:'Aula Contable Consultores asesora a <b>Inversiones Andinas S.A.S.</b> (extranjero · identificación NIT-900123456 · país: Colombia · Carrera 7 # 71-21, Bogotá · contabilidad@inversiones-andinas.test). Servicio de asesoría contable (código SRV-01) por B/.1,500.00; el servicio se usa solo en Colombia, así que va exento. Pago por transferencia. Fecha: la de hoy.',
    check:d=>d.emisor==='E2'&&d.tipoDoc==='03'&&d.receptor.tipo==='04'&&near(d.totales.total,1500)&&near(d.totales.itbms,0),
    pista:'Factura de exportación, receptor 04 (extranjero), ítem exento: el servicio surte efecto fuera de Panamá. Total B/.1,500.00.'},
   {id:'c4', titulo:'Caso 4 · Corregir una factura con nota de crédito', emisor:'E1',
-   texto:'Constructora Ejemplo devolvió 2 de las 10 bolsas de cemento del Caso 1. Emita la <b>nota de crédito</b> que corresponde, con referencia a esa factura.',
+   texto:'Constructora Ejemplo devolvió 2 de las 10 bolsas de cemento del Caso 1 (código CEM-01, B/.9.50 cada una, ITBMS 7 %). Emita la <b>nota de crédito</b> con referencia a la factura del Caso 1. Motivo: devolución de mercancía. El receptor es el mismo del Caso 1 (RUC 155700500-2-2020, DV 33, Calle 50, Ciudad de Panamá). Forma de pago: efectivo. Fecha: la de hoy.',
    check:d=>d.emisor==='E1'&&d.tipoDoc==='04'&&!!d.ref&&near(d.totales.total,20.33),
    pista:'2 bolsas × B/.9.50 = B/.19.00 + ITBMS 7 % (B/.1.33) = B/.20.33. Tipo de documento: nota de crédito, con la factura del Caso 1 como referencia.'},
   {id:'c5', titulo:'Caso 5 · Venta al Estado', emisor:'E2',
-   texto:'Aula Contable Consultores dicta una capacitación al <b>Ministerio de Ejemplo</b> (RUC 8-NT-1-12345, DV 10) por B/.800.00 + ITBMS. Pago a crédito, 30 días.',
+   texto:'Aula Contable Consultores dicta una capacitación (código SRV-02) al <b>Ministerio de Ejemplo</b> (gobierno · RUC 8-NT-1-12345 · DV 10 · Avenida Perú, Ciudad de Panamá · compras@ministerio-ejemplo.test) por B/.800.00 + ITBMS 7 %. Pago a crédito, 30 días. Fecha: la de hoy.',
    check:d=>d.emisor==='E2'&&d.tipoDoc==='01'&&d.receptor.tipo==='03'&&near(d.totales.total,856)&&d.pago.forma==='01',
    pista:'800.00 + ITBMS 7 % (56.00) = B/.856.00. Receptor 03 (gobierno), forma de pago crédito. En la vida real, la factura al Estado muestra las retenciones.'}
 ];
@@ -1074,19 +1074,19 @@ $('#casesBox').addEventListener('click',e=>{
 
 const EVAL = [
   {id:'ev1', pts:20, titulo:'Caso 1 · Factura a una persona natural con descuento', emisor:'E1',
-   texto:'Ferretería La Práctica vende a <b>José Ejemplo</b> (contribuyente persona natural, RUC 8-765-4321, DV 12): 3 galones de pintura a B/.22.00 cada uno, con un descuento de B/.6.00 en esa línea, y 1 brocha a B/.4.00. Todo lleva ITBMS 7 %. Paga con tarjeta de crédito.',
+   texto:'Ferretería La Práctica vende a <b>José Ejemplo</b> (contribuyente persona natural · RUC 8-765-4321 · DV 12 · Barrio Bolívar, David, Chiriquí · jose.ejemplo@correo.test): 3 galones de pintura (código PIN-01) a B/.22.00 cada uno, con un descuento de B/.6.00 en esa línea, y 1 brocha (código BRO-01) a B/.4.00. Todo lleva ITBMS 7 %. Paga con tarjeta de crédito. Fecha: la de hoy.',
    check:d=>d.emisor==='E1'&&d.tipoDoc==='01'&&d.receptor.tipo==='01'&&d.receptor.tipoContrib==='1'&&norm(d.receptor.ruc)==='8-765-4321'&&d.receptor.dv==='12'&&near(d.totales.total,68.48)&&d.pago.forma==='03'},
   {id:'ev2', pts:20, titulo:'Caso 2 · Consumidor final con varias tarifas', emisor:'E4',
-   texto:'Minisúper El Ejercicio vende a un consumidor final: 1 caja de cerveza a B/.18.00, 1 paquete de cigarrillos a B/.6.00 y 2 litros de leche a B/.1.95 cada uno. Aplique la tarifa de ITBMS que corresponde a cada producto. Pago en efectivo.',
+   texto:'Minisúper El Ejercicio vende a un consumidor final (no pide la factura a su nombre; no hace falta RUC, nombre, dirección ni correo): 1 caja de cerveza (código BEB-01) a B/.18.00, 1 paquete de cigarrillos (código TAB-01) a B/.6.00 y 2 litros de leche (código LAC-01) a B/.1.95 cada uno. Aplique la tarifa de ITBMS que corresponde a cada producto. Pago en efectivo. Fecha: la de hoy.',
    check:d=>d.emisor==='E4'&&d.tipoDoc==='01'&&d.receptor.tipo==='02'&&near(d.totales.total,30.60)&&near(d.totales.itbms,2.70)},
   {id:'ev3', pts:20, titulo:'Caso 3 · Servicio exportado', emisor:'E2',
-   texto:'Aula Contable Consultores presta servicios de contabilidad por B/.2,400.00 a <b>Global Tax Advisors LLC</b> de Estados Unidos (identificación EIN-12-3456789). El servicio se usa solo en Estados Unidos. Pago por transferencia.',
+   texto:'Aula Contable Consultores presta servicios de contabilidad (código SRV-01) por B/.2,400.00 a <b>Global Tax Advisors LLC</b> (identificación EIN-12-3456789 · país: Estados Unidos · 100 Main Street, Miami, Florida · billing@globaltax-advisors.test). El servicio se usa solo en Estados Unidos. Pago por transferencia. Fecha: la de hoy.',
    check:d=>d.emisor==='E2'&&d.tipoDoc==='03'&&d.receptor.tipo==='04'&&near(d.totales.total,2400)&&near(d.totales.itbms,0)&&d.pago.forma==='08'},
   {id:'ev4', pts:20, titulo:'Caso 4 · Nota de crédito por descuento posterior', emisor:'E1',
-   texto:'Días después, Ferretería La Práctica le concede a José Ejemplo un descuento adicional de B/.10.00 (más su ITBMS) sobre la factura del Caso 1. Emita el documento que corresponde.',
+   texto:'Días después, Ferretería La Práctica le concede a José Ejemplo un descuento adicional de B/.10.00 (más su ITBMS 7 %) sobre la factura del Caso 1. Emita el documento que corresponde, con referencia a esa factura. Descripción del ítem: «Descuento adicional» (código DES-01). Motivo: descuento posterior a la venta. El receptor es el mismo del Caso 1. Forma de pago: tarjeta de crédito. Fecha: la de hoy.',
    check:(d,docs)=>{if(!(d.emisor==='E1'&&d.tipoDoc==='04'&&near(d.totales.total,10.70)))return false;const f=(docs||STATE.docs).find(x=>x.id===d.ref);return !!f&&norm(f.receptor.ruc)==='8-765-4321'}},
   {id:'ev5', pts:20, titulo:'Caso 5 · Venta al Estado a crédito', emisor:'E3',
-   texto:'Ana Práctica diseña un afiche para el <b>Municipio de Ejemplo</b> (RUC 8-NT-2-54321, DV 45) por B/.350.00 + ITBMS. El municipio paga a crédito, a 45 días.',
+   texto:'Ana Práctica diseña un afiche (código DIS-01) para el <b>Municipio de Ejemplo</b> (gobierno · RUC 8-NT-2-54321 · DV 45 · Calle Principal, La Chorrera · tesoreria@municipio-ejemplo.test) por B/.350.00 + ITBMS 7 %. El municipio paga a crédito, a 45 días. Fecha: la de hoy.',
    check:d=>d.emisor==='E3'&&d.tipoDoc==='01'&&d.receptor.tipo==='03'&&norm(d.receptor.ruc)==='8-NT-2-54321'&&d.receptor.dv==='45'&&near(d.totales.total,374.50)&&d.pago.forma==='01'&&String(d.pago.plazo)==='45'}
 ];
 function evalResult(docs){ return EVAL.map(c => ({ id: c.id, pts: c.pts, ok: docs.some(d => d.estado !== 'Anulado' && c.check(d, docs)) })); }

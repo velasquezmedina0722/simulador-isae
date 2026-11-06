@@ -157,7 +157,8 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <button class="btn" type="submit">Ingresar</button>
       </form>
       <form id="fUp" class="hidden" autocomplete="on">
-        <p class="hint" style="margin-top:0">Solo pueden crear cuenta los correos que autorizó el facilitador. Usted elige su contraseña.</p>
+        <p class="hint" style="margin-top:0">Cree su cuenta con su correo y elija su contraseña.</p>
+        <div class="field"><label for="upNombre">Nombre completo</label><input id="upNombre" autocomplete="name" required></div>
         <div class="field"><label for="upEmail">Correo electrónico</label><input id="upEmail" type="email" autocomplete="username" required></div>
         <div class="field"><label for="upPw">Contraseña (mínimo 8 caracteres)</label><input id="upPw" type="password" autocomplete="new-password" minlength="8" required></div>
         <div class="field"><label for="upPw2">Repita la contraseña</label><input id="upPw2" type="password" autocomplete="new-password" minlength="8" required></div>
@@ -393,7 +394,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <button data-dc="progreso" class="active">Progreso y notas</button>
         <button data-dc="entregas">Entregas</button>
         <button data-dc="publicar">Publicar</button>
-        <button data-dc="acceso">Estudiantes autorizados</button>
+        <button data-dc="acceso">Lista de clase</button>
       </div>
 
       <div data-dcv="progreso">
@@ -449,10 +450,10 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
 
       <div data-dcv="acceso" class="hidden">
         <div class="card">
-          <h2>Autorizar estudiantes</h2>
-          <p style="margin-top:0;font-size:13.5px">Escriba una persona por línea: <span class="kbd">correo; nombre</span>. Después avísele que entre a esta página y pulse <b>Crear mi cuenta</b> con ese correo.</p>
+          <h2>Lista de clase</h2>
+          <p style="margin-top:0;font-size:13.5px">Cualquier persona puede crear su cuenta sin que usted la autorice. Esta lista es opcional: sirve para que en <b>Progreso y notas</b> también aparezcan quienes todavía no han creado su cuenta. Escriba una persona por línea: <span class="kbd">correo; nombre</span>.</p>
           <textarea id="acNew" rows="4" placeholder="estudiante@gmail.com; Nombre Apellido"></textarea>
-          <div class="row" style="margin-top:10px"><button class="btn" id="btnAc">Autorizar</button></div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="btnAc">Agregar a la lista</button></div>
           <div class="msgs" id="acMsg"></div>
           <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Correo</th><th>Nombre</th><th>Rol</th><th>Cuenta</th><th></th></tr></thead><tbody id="acBody"></tbody></table></div>
         </div>
@@ -549,7 +550,7 @@ function supaApi(){
     async session(){ const { data } = await sb.auth.getSession(); return data.session ? { id:data.session.user.id, email:data.session.user.email } : null; },
     async autorizado(email){ return chk(await sb.rpc('correo_autorizado', { correo: email })); },
     async signIn(email, pw){ chk(await sb.auth.signInWithPassword({ email, password: pw })); },
-    async signUp(email, pw){ const d = chk(await sb.auth.signUp({ email, password: pw })); if (!d.session) throw new Error('CONFIRM'); },
+    async signUp(email, pw, nombre){ const d = chk(await sb.auth.signUp({ email, password: pw, options: { data: { nombre } } })); if (!d.session) throw new Error('CONFIRM'); },
     async signOut(){ await sb.auth.signOut(); },
     async reset(email){ chk(await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname })); },
     async newPassword(pw){ chk(await sb.auth.updateUser({ password: pw })); },
@@ -602,12 +603,12 @@ function mockApi(){
       if (!u || u.pw !== pw) throw new Error('Invalid login credentials');
       me = { id:u.id, email:email.toLowerCase() }; sessionStorage.setItem(K+'me', JSON.stringify(me));
     },
-    async signUp(email, pw){
+    async signUp(email, pw, nombre){
       email = email.toLowerCase();
       const users = get('users', {}); if (users[email]) throw new Error('User already registered');
-      const a = get('acceso', []).find(x => x.email === email); if (!a) throw new Error('no autorizado');
+      const a = get('acceso', []).find(x => x.email === email) || {};
       const id = uid(); users[email] = { id, pw }; put('users', users);
-      const ps = get('perfiles', []); ps.push({ id, email, nombre:a.nombre, rol:a.rol, creado:now() }); put('perfiles', ps);
+      const ps = get('perfiles', []); ps.push({ id, email, nombre:nombre || a.nombre, rol:a.rol || 'estudiante', creado:now() }); put('perfiles', ps);
       me = { id, email }; sessionStorage.setItem(K+'me', JSON.stringify(me));
     },
     async signOut(){ me = null; sessionStorage.removeItem(K+'me'); },
@@ -686,14 +687,12 @@ $('#fIn').addEventListener('submit', async e => {
 });
 $('#fUp').addEventListener('submit', async e => {
   e.preventDefault(); $('#authMsg').innerHTML = '';
-  const em = $('#upEmail').value.trim().toLowerCase(), pw = $('#upPw').value;
+  const em = $('#upEmail').value.trim().toLowerCase(), pw = $('#upPw').value, nombre = $('#upNombre').value.trim().replace(/\s+/g, ' ');
+  if (nombre.length < 5) return errMsg('#authMsg', 'Escriba su nombre completo.');
   if (pw.length < 8) return errMsg('#authMsg', 'La contraseña debe tener al menos 8 caracteres.');
   if (pw !== $('#upPw2').value) return errMsg('#authMsg', 'Las dos contraseñas no coinciden.');
   try {
-    await busy(e.submitter || $('#fUp .btn'), async () => {
-      if (!(await api.autorizado(em))) throw new Error('no autorizado');
-      await api.signUp(em, pw);
-    });
+    await busy(e.submitter || $('#fUp .btn'), () => api.signUp(em, pw, nombre));
     await start();
   } catch(err){ errMsg('#authMsg', err); }
 });
@@ -1144,9 +1143,18 @@ async function dcShow(k){
 }
 $('#btnRefresh').addEventListener('click', async e => { await busy(e.target, dcLoad); dcProgreso(); });
 
+/* Estudiantes = todos los registrados (no docentes) + los de la lista que aún no crean cuenta */
+function estudiantes(){
+  const docentes = new Set(DC.acceso.filter(a => a.rol === 'docente').map(a => a.email));
+  const lista = DC.perfiles.filter(p => p.rol !== 'docente' && !docentes.has(p.email)).map(p => {
+    const a = DC.acceso.find(x => x.email === p.email);
+    return { email: p.email, nombre: p.nombre || (a && a.nombre) || '' };
+  });
+  DC.acceso.filter(a => a.rol !== 'docente' && !DC.perfiles.some(p => p.email === a.email)).forEach(a => lista.push({ email: a.email, nombre: a.nombre || '' }));
+  return lista.sort((a, b) => (a.nombre || a.email).localeCompare(b.nombre || b.email, 'es'));
+}
 function filas(){
-  const est = DC.acceso.filter(a => a.rol !== 'docente').sort((a, b) => (a.nombre || a.email).localeCompare(b.nombre || b.email));
-  return est.map(a => {
+  return estudiantes().map(a => {
     const p = DC.perfiles.find(x => x.email === a.email);
     const docs = p ? (DC.porUsuario[p.id] || []) : [];
     const casos = CASES.filter(c => docs.some(d => d.estado !== 'Anulado' && c.check(d))).length;
@@ -1180,7 +1188,7 @@ $('#btnCsv').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 });
 
-function nombreDe(uid){ const p = DC.perfiles.find(x => x.id === uid); if (!p) return 'Usuario'; const a = DC.acceso.find(x => x.email === p.email); return (a && a.nombre) || p.nombre || p.email; }
+function nombreDe(uid){ const p = DC.perfiles.find(x => x.id === uid); if (!p) return 'Usuario'; const a = DC.acceso.find(x => x.email === p.email); return p.nombre || (a && a.nombre) || p.email; }
 function dcEntregas(){
   const sel = $('#dcTarea'); const prev = sel.value;
   sel.innerHTML = DC.tareas.map(t => `<option value="${t.id}">${esc(t.titulo)}</option>`).join('');
@@ -1196,7 +1204,7 @@ function dcEntregas(){
     <td><textarea class="mini" rows="2" id="ret-${x.id}">${esc(x.retro || '')}</textarea></td>
     <td><button class="btn small" data-calificar="${x.id}">Guardar</button></td></tr>`).join('') || '<tr><td colspan="6" class="hint">Nadie ha entregado todavía.</td></tr>';
   const entregaron = new Set(en.map(x => x.user_id));
-  const faltan = DC.acceso.filter(a => a.rol !== 'docente').filter(a => { const p = DC.perfiles.find(x => x.email === a.email); return !p || !entregaron.has(p.id); }).map(a => a.nombre || a.email);
+  const faltan = estudiantes().filter(a => { const p = DC.perfiles.find(x => x.email === a.email); return !p || !entregaron.has(p.id); }).map(a => a.nombre || a.email);
   $('#enFalta').textContent = faltan.length ? 'Faltan por entregar: ' + faltan.join(', ') + '.' : 'Todos entregaron.';
 }
 $('#dcTarea').addEventListener('change', dcEntregas);
@@ -1265,7 +1273,7 @@ $('#btnAc').addEventListener('click', async e => {
   const ya = []; let ok = 0;
   await busy(e.target, async () => { for (const n of nuevos){ if (DC.acceso.some(a => a.email === n.email)){ ya.push(n.email); continue; } try { await api.insert('acceso', n); ok++; } catch(err){ malos.push(n.email + ' (' + errText(err) + ')'); } } await dcLoad(); });
   dcAcceso(); $('#acNew').value = malos.join('\n');
-  $('#acMsg').innerHTML = `<div class="msg ok">✓ ${ok} autorizado(s).</div>` + (ya.length ? `<div class="msg warn">Ya estaban: ${esc(ya.join(', '))}</div>` : '') + (malos.length ? `<div class="msg err">Revise: ${esc(malos.join(' · '))}</div>` : '');
+  $('#acMsg').innerHTML = `<div class="msg ok">✓ ${ok} agregado(s) a la lista.</div>` + (ya.length ? `<div class="msg warn">Ya estaban: ${esc(ya.join(', '))}</div>` : '') + (malos.length ? `<div class="msg err">Revise: ${esc(malos.join(' · '))}</div>` : '');
 });
 $('#acBody').addEventListener('click', async e => {
   const em = e.target.dataset.quitar; if (!em) return;

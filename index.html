@@ -126,6 +126,8 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
 .mockbar{background:#8a5a00;color:#fff;text-align:center;font-size:12.5px;padding:5px 12px}
 .desc{white-space:pre-line;font-size:13.5px}
 .ebox{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.casobar{position:sticky;top:0;z-index:6;border-left:4px solid var(--brand);box-shadow:0 3px 10px rgba(20,30,50,.10)}
+.casobar .ctit{font-weight:700;color:var(--brand)}
 .ebox b{color:var(--brand)}
 .tf textarea{font-size:13.5px}
 .ficha{background:var(--card);color:var(--ink);max-width:980px;width:100%;border-radius:8px;padding:20px}
@@ -220,6 +222,14 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
     </div>
 
     <!-- EMITIR -->
+    <div data-view="emitir" class="hidden card casobar">
+      <div class="row">
+        <label for="casoSel" style="margin:0;font-size:14px;color:var(--brand)">¿Qué caso está resolviendo?</label>
+        <select id="casoSel" style="max-width:440px;flex:1"></select>
+        <button class="btn small secondary right" type="button" id="casoToggle">Ocultar enunciado</button>
+      </div>
+      <div id="casoTxt" style="margin-top:8px;font-size:14px"></div>
+    </div>
     <div data-view="emitir" class="hidden">
       <form id="docForm" autocomplete="off" novalidate>
       <div class="card">
@@ -750,9 +760,9 @@ function show(tab){
   $$('[data-view]').forEach(v => v.classList.toggle('hidden', v.dataset.view !== tab));
   if (tab === 'inicio') renderInicio();
   if (tab === 'emitidos') renderEmitidos();
-  if (tab === 'casos') renderCases();
-  if (tab === 'evaluacion') renderEval();
-  if (tab === 'emitir') prepareForm();
+  if (tab === 'casos'){ renderCases(); botonesResolver('#casesBox', 'p:', CASES); }
+  if (tab === 'evaluacion'){ renderEval(); botonesResolver('#evalBox', 'e:', EVAL); }
+  if (tab === 'emitir'){ renderCasoBar(); prepareForm(); }
   if (tab === 'tareas') renderTareas();
   if (tab === 'materiales') renderMateriales();
   if (tab === 'docente') dcShow(DC_TAB);
@@ -942,6 +952,9 @@ $('#btnEmitir').addEventListener('click', async () => {
     d.dbid = row.id; STATE.docs.unshift(d);
   } catch(err){ errMsg('#docMsgs', 'No se pudo guardar el documento: ' + errText(err)); return; }
   showMsgs(v, 'Documento autorizado (simulado). Número ' + d.numero + '.');
+  const ca = casoActivo();
+  if (ca && ca.grupo !== 'Evaluación') $('#docMsgs').insertAdjacentHTML('beforeend', ca.c.check(d) ? `<div class="msg ok">✓ Este documento cumple el ${esc(ca.c.titulo.split('·')[0].trim())}.</div>` : `<div class="msg warn">Este documento quedó emitido, pero no cumple el ${esc(ca.c.titulo.split('·')[0].trim())}. Revise el enunciado; puede anularlo y emitir otro.</div>`);
+  if (ca && ca.grupo === 'Evaluación') $('#docMsgs').insertAdjacentHTML('beforeend', '<div class="msg ok">Documento guardado para la evaluación.</div>');
   openCafe(d);
   ITEMS = [newItem()]; renderItems(); $('#fNum').value = nextNum(); refreshRef();
 });
@@ -986,6 +999,39 @@ function openCafe(d){
 $('#cafeClose').addEventListener('click',()=>$('#cafeOverlay').classList.add('hidden'));
 $('#cafeOverlay').addEventListener('click',e=>{if(e.target.id==='cafeOverlay')$('#cafeOverlay').classList.add('hidden')});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#cafeOverlay').classList.add('hidden')});
+
+/* ======== Caso que se está resolviendo ======== */
+let CASO = '', CASO_OCULTO = false;
+function listaCasos(){ return [...CASES.map(c => ({ k: 'p:' + c.id, grupo: 'Casos de práctica', c })), ...EVAL.map(c => ({ k: 'e:' + c.id, grupo: 'Evaluación', c }))]; }
+function casoActivo(){ return listaCasos().find(x => x.k === CASO) || null; }
+function renderCasoBar(){
+  const L = listaCasos();
+  const opt = g => L.filter(x => x.grupo === g).map(x => `<option value="${x.k}" ${x.k === CASO ? 'selected' : ''}>${esc(x.c.titulo)}</option>`).join('');
+  $('#casoSel').innerHTML = `<option value="">Práctica libre (sin caso)</option><optgroup label="Casos de práctica">${opt('Casos de práctica')}</optgroup><optgroup label="Evaluación (100 puntos)">${opt('Evaluación')}</optgroup>`;
+  const a = casoActivo();
+  $('#casoTxt').classList.toggle('hidden', CASO_OCULTO);
+  $('#casoToggle').classList.toggle('hidden', !a);
+  $('#casoToggle').textContent = CASO_OCULTO ? 'Ver enunciado' : 'Ocultar enunciado';
+  $('#casoTxt').innerHTML = a ? `<div class="ctit">${esc(a.c.titulo)}</div><div style="margin-top:4px">${a.c.texto}</div><div class="hint" style="margin-top:4px">Emisor: ${esc(EMISORES.find(x => x.id === a.c.emisor).nombre)} (ya quedó seleccionado)${a.grupo === 'Evaluación' ? ' · Al terminar los 5 casos, vaya a <b>Evaluación</b> y pulse «Calcular y guardar mi nota».' : ' · Al emitir, le diré si el documento cumple el caso.'}</div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena el documento.</span>';
+}
+function elegirCaso(k){
+  CASO = k; CASO_OCULTO = false;
+  const a = casoActivo();
+  if (a && a.c.emisor !== STATE.emisor){ STATE.emisor = a.c.emisor; save(); renderEmisor(); }
+  renderCasoBar(); prepareForm();
+}
+$('#casoSel').addEventListener('change', e => elegirCaso(e.target.value));
+$('#casoToggle').addEventListener('click', () => { CASO_OCULTO = !CASO_OCULTO; renderCasoBar(); });
+function botonesResolver(box, pref, arr){
+  [...$(box).querySelectorAll('.case')].forEach((el, i) => {
+    if (!arr[i] || el.querySelector('[data-resolver]')) return;
+    const b = document.createElement('button'); b.className = 'btn small'; b.textContent = 'Resolver este caso'; b.dataset.resolver = pref + arr[i].id;
+    let fila = el.querySelector('.row[style*="margin-top:8px"]');
+    if (!fila){ fila = document.createElement('div'); fila.className = 'row'; fila.style.marginTop = '8px'; el.appendChild(fila); }
+    fila.prepend(b);
+  });
+}
+document.addEventListener('click', e => { const k = e.target.dataset && e.target.dataset.resolver; if (k){ show('emitir'); elegirCaso(k); } });
 
 /* ======== Documentos emitidos ======== */
 function renderEmitidos(){

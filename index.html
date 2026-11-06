@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aula Fiscal ISAE</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231f3864'/%3E%3Ctext x='16' y='21' font-family='Arial' font-size='13' font-weight='700' fill='white' text-anchor='middle'%3EFE%3C/text%3E%3C/svg%3E">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{
+  --ink:#1b2333; --muted:#5b6475; --line:#d7dce5; --bg:#f4f6f9; --card:#ffffff;
+  --brand:#1f3864; --brand2:#2d4f8a; --accent:#b8860b; --ok:#2e7d32; --err:#b3261e; --warn:#8a5a00;
+  --soft:#eef2f8;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#e6e9ef; --muted:#a3abba; --line:#353d4c; --bg:#151a22; --card:#1d2430;
+    --brand:#8fb0e8; --brand2:#a9c2ee; --accent:#e0b44a; --ok:#7bc47f; --err:#f08a80; --warn:#e6b35a; --soft:#232c3a;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#e6e9ef; --muted:#a3abba; --line:#353d4c; --bg:#151a22; --card:#1d2430;
+  --brand:#8fb0e8; --brand2:#a9c2ee; --accent:#e0b44a; --ok:#7bc47f; --err:#f08a80; --warn:#e6b35a; --soft:#232c3a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Segoe UI",Calibri,Arial,sans-serif;font-size:15px;line-height:1.45}
+a{color:var(--brand2)}
+.banner{background:#7a1f1f;color:#fff;text-align:center;font-size:13px;padding:6px 12px;font-weight:600;letter-spacing:.02em}
+header{background:var(--card);border-bottom:1px solid var(--line);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:8px;background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:700;font-size:15px}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo{color:#151a22}}
+:root[data-theme="dark"] .logo{color:#151a22}
+.brand h1{font-size:17px;margin:0;color:var(--brand)}
+.brand p{margin:0;font-size:12.5px;color:var(--muted)}
+.userbox{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center}
+nav{background:var(--card);border-bottom:1px solid var(--line);display:flex;gap:2px;padding:0 10px;overflow-x:auto}
+nav button{background:none;border:0;border-bottom:3px solid transparent;padding:11px 14px;font:inherit;color:var(--muted);cursor:pointer;white-space:nowrap}
+nav button.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+main{max-width:1060px;margin:0 auto;padding:18px 16px 60px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 12px;color:var(--brand)}
+.card h3{font-size:14.5px;margin:14px 0 8px;color:var(--brand)}
+.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px;font-weight:600}
+label .req{color:var(--err)}
+input,select,textarea{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:var(--card);color:var(--ink);font:inherit}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--brand2);outline-offset:0}
+input.bad,select.bad{border-color:var(--err);background:color-mix(in srgb,var(--err) 8%,var(--card))}
+.hint{font-size:12px;color:var(--muted);margin-top:3px}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--brand);background:var(--brand);color:#fff;padding:9px 16px;border-radius:7px;font:inherit;font-weight:600;cursor:pointer}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#151a22}}
+:root[data-theme="dark"] .btn{color:#151a22}
+.btn.secondary{background:transparent;color:var(--brand)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn.danger{background:transparent;color:var(--err);border-color:var(--err)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.right{margin-left:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+td.num,th.num{text-align:right;white-space:nowrap}
+.items input,.items select{padding:6px 7px}
+.tablewrap{overflow-x:auto}
+.totals{max-width:360px;margin-left:auto}
+.totals div{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line)}
+.totals .grand{font-weight:700;font-size:16px;border-bottom:0;color:var(--brand)}
+.msgs{margin-top:12px}
+.msg{padding:9px 12px;border-radius:7px;margin-bottom:6px;font-size:13.5px;border:1px solid}
+.msg.err{color:var(--err);border-color:color-mix(in srgb,var(--err) 40%,transparent);background:color-mix(in srgb,var(--err) 8%,var(--card))}
+.msg.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 8%,var(--card))}
+.msg.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent);background:color-mix(in srgb,var(--ok) 8%,var(--card))}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600}
+.pill.ok{background:color-mix(in srgb,var(--ok) 15%,transparent);color:var(--ok)}
+.pill.err{background:color-mix(in srgb,var(--err) 15%,transparent);color:var(--err)}
+.pill.info{background:var(--soft);color:var(--brand)}
+.hidden{display:none!important}
+.login{max-width:420px;margin:40px auto}
+.steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.steps span{background:var(--soft);color:var(--brand);border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:600}
+/* CAFE */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:flex-start;justify-content:center;padding:20px 12px;overflow:auto;z-index:20}
+.cafe{background:#fff;color:#111;max-width:760px;width:100%;border-radius:6px;padding:26px;position:relative;overflow:hidden;font-family:Calibri,Arial,sans-serif}
+.cafe .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.cafe .wm span{transform:rotate(-28deg);font-size:54px;font-weight:800;color:rgba(179,38,30,.12);white-space:nowrap}
+.cafe h3{margin:0;font-size:15px;text-align:center}
+.cafe .sub{text-align:center;font-size:12px;color:#7a1f1f;font-weight:700;margin:4px 0 12px}
+.cafe .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12.5px;margin-bottom:10px}
+.cafe .box{border:1px solid #bbb;border-radius:4px;padding:8px}
+.cafe .box b{display:block;font-size:11px;color:#555;text-transform:uppercase;margin-bottom:3px}
+.cafe table{font-size:12px}
+.cafe th{color:#333}
+.cafe .foot{display:grid;grid-template-columns:150px 1fr;gap:14px;margin-top:12px;font-size:11.5px;align-items:start}
+.cafe .cufe{word-break:break-all;font-family:Consolas,monospace;font-size:11px;background:#f3f3f3;padding:6px;border-radius:4px}
+.cafe .qr{width:140px;height:140px;border:1px solid #ccc;display:grid;place-items:center;font-size:10px;text-align:center}
+.cafe .qr img,.cafe .qr canvas{width:136px!important;height:136px!important}
+.cafe .legal{margin-top:12px;font-size:11px;color:#7a1f1f;border-top:1px solid #ccc;padding-top:8px;text-align:center;font-weight:600}
+@media (max-width:560px){.cafe .two,.cafe .foot{grid-template-columns:1fr}.cafe{padding:16px}}
+.case{border:1px solid var(--line);border-radius:8px;padding:12px;margin-bottom:10px}
+.case h4{margin:0 0 6px;font-size:14.5px}
+.kbd{font-family:Consolas,monospace;background:var(--soft);padding:1px 5px;border-radius:4px}
+ul.tight{margin:4px 0 0 18px;padding:0}
+ul.tight li{margin:3px 0}
+.authtabs{display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+.authtabs button{background:none;border:0;border-bottom:3px solid transparent;padding:8px 10px;font:inherit;color:var(--muted);cursor:pointer}
+.authtabs button.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+.field{margin-bottom:10px}
+.ann{border-left:3px solid var(--brand);padding:6px 12px;margin-bottom:12px}
+.ann h4{margin:0 0 3px;font-size:14.5px}
+.ann .when{font-size:12px;color:var(--muted)}
+.ann p{margin:4px 0 0;font-size:13.5px;white-space:pre-line}
+.stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{background:var(--soft);border-radius:8px;padding:10px 12px}
+.stat b{display:block;font-size:20px;color:var(--brand)}
+.stat span{font-size:12.5px;color:var(--muted)}
+.sub-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.sub-nav button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:20px;padding:6px 14px;font:inherit;font-size:13.5px;cursor:pointer}
+.sub-nav button.active{background:var(--brand);border-color:var(--brand);color:#fff}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .sub-nav button.active{color:#151a22}}
+:root[data-theme="dark"] .sub-nav button.active{color:#151a22}
+td input.mini{width:80px;padding:5px 7px}
+td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
+.mockbar{background:#8a5a00;color:#fff;text-align:center;font-size:12.5px;padding:5px 12px}
+.desc{white-space:pre-line;font-size:13.5px}
+</style>
+</head>
+<body>
+<div class="banner">ENTORNO DE PRÁCTICA – Los documentos de este simulador no tienen valor fiscal. No es el sistema oficial de la DGI.</div>
+<div class="mockbar hidden" id="mockbar">Modo de prueba local: los datos se guardan solo en este navegador. Falta conectar la base de datos.</div>
+<header>
+  <div class="brand">
+    <div class="logo">FE</div>
+    <div>
+      <h1>Aula Fiscal ISAE</h1>
+      <p>Seminario-Taller de Actualización Fiscal y Tributaria en Panamá · Simulador de Facturación Electrónica</p>
+    </div>
+  </div>
+  <div class="userbox hidden" id="userbox"><span id="userlabel"></span><button class="btn small secondary" id="logout">Cerrar sesión</button></div>
+</header>
+
+<!-- ACCESO -->
+<section id="loginView">
+  <main>
+    <div class="card login">
+      <div class="authtabs" id="authTabs">
+        <button data-auth="in" class="active">Ingresar</button>
+        <button data-auth="up">Crear mi cuenta</button>
+        <button data-auth="reset">Olvidé mi contraseña</button>
+      </div>
+      <form id="fIn" autocomplete="on">
+        <p class="hint" style="margin-top:0">Use el correo con el que se registró en el seminario.</p>
+        <div class="field"><label for="inEmail">Correo electrónico</label><input id="inEmail" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="inPw">Contraseña</label><input id="inPw" type="password" autocomplete="current-password" required></div>
+        <button class="btn" type="submit">Ingresar</button>
+      </form>
+      <form id="fUp" class="hidden" autocomplete="on">
+        <p class="hint" style="margin-top:0">Solo pueden crear cuenta los correos que autorizó el facilitador. Usted elige su contraseña.</p>
+        <div class="field"><label for="upEmail">Correo electrónico</label><input id="upEmail" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="upPw">Contraseña (mínimo 8 caracteres)</label><input id="upPw" type="password" autocomplete="new-password" minlength="8" required></div>
+        <div class="field"><label for="upPw2">Repita la contraseña</label><input id="upPw2" type="password" autocomplete="new-password" minlength="8" required></div>
+        <button class="btn" type="submit">Crear mi cuenta</button>
+      </form>
+      <form id="fReset" class="hidden">
+        <p class="hint" style="margin-top:0">Le enviaremos un enlace a su correo para crear una contraseña nueva. Revise también la carpeta de spam.</p>
+        <div class="field"><label for="rsEmail">Correo electrónico</label><input id="rsEmail" type="email" required></div>
+        <button class="btn" type="submit">Enviar enlace</button>
+      </form>
+      <form id="fNewPw" class="hidden">
+        <h2>Crear una contraseña nueva</h2>
+        <div class="field"><label for="npPw">Contraseña nueva (mínimo 8 caracteres)</label><input id="npPw" type="password" autocomplete="new-password" minlength="8" required></div>
+        <button class="btn" type="submit">Guardar contraseña</button>
+      </form>
+      <div class="msgs" id="authMsg"></div>
+    </div>
+  </main>
+</section>
+
+<!-- APP -->
+<section id="appView" class="hidden">
+  <nav id="tabs">
+    <button data-tab="inicio" class="active">Inicio</button>
+    <button data-tab="emitir">Emitir documento</button>
+    <button data-tab="emitidos">Documentos emitidos</button>
+    <button data-tab="casos">Casos de práctica</button>
+    <button data-tab="evaluacion">Evaluación</button>
+    <button data-tab="tareas">Tareas</button>
+    <button data-tab="materiales">Materiales</button>
+    <button data-tab="ayuda">Ayuda</button>
+    <button data-tab="docente" class="hidden" id="tabDocente">Panel del facilitador</button>
+  </nav>
+  <main>
+    <!-- INICIO -->
+    <div data-view="inicio">
+      <div class="card">
+        <h2 id="hola">Bienvenido(a)</h2>
+        <p style="margin-top:0">Esta es el aula del seminario. Aquí practicará la facturación electrónica con empresas <b>ficticias</b>, entregará sus tareas y verá los materiales y sus notas.</p>
+        <div class="stats" id="miAvance"></div>
+      </div>
+      <div class="card">
+        <h2>Anuncios</h2>
+        <div id="anunciosBox"></div>
+      </div>
+      <div class="card">
+        <h2>Emisor activo del simulador</h2>
+        <div class="grid">
+          <div><label for="emisorSel">Seleccione la empresa con la que va a facturar</label><select id="emisorSel"></select></div>
+          <div id="emisorInfo" style="font-size:13.5px"></div>
+        </div>
+        <div class="steps" style="margin-top:14px"><span>1. Elija el emisor</span><span>2. Tipo de documento</span><span>3. Datos del receptor</span><span>4. Detalle de ítems</span><span>5. Forma de pago</span><span>6. Validar y emitir</span></div>
+        <div class="row"><button class="btn" data-goto="emitir">Emitir un documento</button><button class="btn secondary" data-goto="casos">Ver casos de práctica</button></div>
+      </div>
+    </div>
+
+    <!-- EMITIR -->
+    <div data-view="emitir" class="hidden">
+      <form id="docForm" autocomplete="off" novalidate>
+      <div class="card">
+        <h2>1. Datos generales del documento</h2>
+        <div class="grid">
+          <div><label>Emisor</label><input id="fEmisor" disabled></div>
+          <div><label for="fTipoDoc">Tipo de documento <span class="req">*</span></label>
+            <select id="fTipoDoc">
+              <option value="01">Factura de operación interna</option>
+              <option value="03">Factura de exportación</option>
+              <option value="04">Nota de crédito</option>
+              <option value="05">Nota de débito</option>
+            </select></div>
+          <div><label for="fFecha">Fecha de emisión <span class="req">*</span></label><input id="fFecha" type="date"></div>
+          <div><label for="fPto">Punto de facturación</label><input id="fPto" value="001" maxlength="3"></div>
+          <div><label>Número de documento</label><input id="fNum" disabled></div>
+        </div>
+        <div id="refBox" class="hidden" style="margin-top:12px">
+          <h3>Documento de referencia</h3>
+          <div class="grid">
+            <div><label for="fRef">Factura que se corrige <span class="req">*</span></label><select id="fRef"></select></div>
+            <div><label for="fMotivo">Motivo <span class="req">*</span></label><input id="fMotivo" placeholder="Ej.: devolución de mercancía, descuento posterior, error en precio"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2. Datos del receptor</h2>
+        <div class="grid">
+          <div><label for="rTipo">Tipo de receptor <span class="req">*</span></label>
+            <select id="rTipo">
+              <option value="01">01 · Contribuyente</option>
+              <option value="02">02 · Consumidor final</option>
+              <option value="03">03 · Gobierno</option>
+              <option value="04">04 · Extranjero</option>
+            </select></div>
+          <div id="rTipoContribBox"><label for="rTipoContrib">Tipo de contribuyente</label>
+            <select id="rTipoContrib"><option value="2">Jurídico</option><option value="1">Natural</option></select></div>
+          <div id="rRucBox"><label for="rRuc">RUC <span class="req" id="rRucReq">*</span></label><input id="rRuc" placeholder="Ej.: 155712345-2-2021 o 8-123-456"></div>
+          <div id="rDvBox"><label for="rDv">DV <span class="req" id="rDvReq">*</span></label><input id="rDv" maxlength="2" placeholder="Ej.: 45"></div>
+          <div id="rPasBox" class="hidden"><label for="rPas">Pasaporte o identificación extranjera <span class="req">*</span></label><input id="rPas"></div>
+          <div id="rPaisBox" class="hidden"><label for="rPais">País <span class="req">*</span></label><input id="rPais" placeholder="Ej.: Colombia"></div>
+          <div><label for="rNombre">Nombre o razón social <span class="req" id="rNomReq">*</span></label><input id="rNombre"></div>
+          <div><label for="rDir">Dirección</label><input id="rDir"></div>
+          <div><label for="rCorreo">Correo electrónico</label><input id="rCorreo" type="email" placeholder="para enviarle el CAFE"></div>
+        </div>
+        <div class="hint" id="rHint"></div>
+      </div>
+
+      <div class="card">
+        <h2>3. Detalle de ítems</h2>
+        <div class="tablewrap">
+        <table class="items">
+          <thead><tr><th style="width:9%">Código</th><th>Descripción</th><th class="num" style="width:9%">Cant.</th><th class="num" style="width:12%">Precio unit.</th><th class="num" style="width:10%">Desc.</th><th style="width:12%">ITBMS</th><th class="num" style="width:11%">Total ítem</th><th style="width:4%"></th></tr></thead>
+          <tbody id="itemsBody"></tbody>
+        </table>
+        </div>
+        <div class="row" style="margin-top:10px"><button class="btn small secondary" type="button" id="addItem">+ Agregar ítem</button><span class="hint">Tarifas: 7 % general · 10 % licores y hospedaje · 15 % tabaco · Exento (0 %)</span></div>
+        <div class="totals" style="margin-top:12px" id="totalsBox"></div>
+      </div>
+
+      <div class="card">
+        <h2>4. Forma de pago</h2>
+        <div class="grid">
+          <div><label for="pForma">Forma de pago <span class="req">*</span></label>
+            <select id="pForma">
+              <option value="01">Crédito</option>
+              <option value="02" selected>Efectivo</option>
+              <option value="03">Tarjeta de crédito</option>
+              <option value="04">Tarjeta de débito</option>
+              <option value="08">Transferencia / ACH</option>
+            </select></div>
+          <div><label for="pMonto">Monto pagado <span class="req">*</span></label><input id="pMonto" type="number" step="0.01" min="0"></div>
+          <div id="pPlazoBox" class="hidden"><label for="pPlazo">Plazo (días)</label><input id="pPlazo" type="number" min="1" value="30"></div>
+        </div>
+        <div class="hint">El monto pagado debe ser igual al total del documento.</div>
+      </div>
+
+      <div class="card">
+        <div class="row">
+          <button class="btn secondary" type="button" id="btnValidar">Validar</button>
+          <button class="btn" type="button" id="btnEmitir">Emitir documento</button>
+          <button class="btn danger right" type="button" id="btnLimpiar">Limpiar</button>
+        </div>
+        <div class="msgs" id="docMsgs"></div>
+      </div>
+      </form>
+    </div>
+
+    <!-- EMITIDOS -->
+    <div data-view="emitidos" class="hidden">
+      <div class="card">
+        <h2>Documentos emitidos</h2>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Fecha</th><th>Tipo</th><th>Número</th><th>Receptor</th><th class="num">Total</th><th>Estado</th><th></th></tr></thead>
+          <tbody id="emitBody"></tbody>
+        </table></div>
+        <p class="hint" id="emitEmpty">Todavía no ha emitido documentos.</p>
+      </div>
+    </div>
+
+    <!-- CASOS -->
+    <div data-view="casos" class="hidden">
+      <div class="card">
+        <h2>Casos de práctica</h2>
+        <p style="margin-top:0;font-size:13.5px">Emita el documento que pide cada caso con el emisor indicado. Luego pulse <b>Comprobar</b>: el simulador busca entre sus documentos emitidos uno que cumpla el caso. Estos casos no cuentan para la nota.</p>
+        <div id="casesBox"></div>
+      </div>
+    </div>
+
+    <!-- EVALUACION -->
+    <div data-view="evaluacion" class="hidden">
+      <div class="card">
+        <h2>Evaluación · Facturación electrónica (100 puntos)</h2>
+        <p style="margin-top:0;font-size:13.5px">Emita los documentos que pide cada caso. Aquí no hay pistas: aplique lo aprendido. Cuando termine, pulse <b>Calcular y guardar mi nota</b>. La nota queda registrada para el facilitador; puede corregir y volver a calcular las veces que quiera hasta la fecha límite.</p>
+        <div id="evalBox"></div>
+        <div class="row" style="margin-top:6px"><button class="btn" id="btnNota">Calcular y guardar mi nota</button></div>
+        <div id="notaBox" class="msgs"></div>
+      </div>
+    </div>
+
+    <!-- TAREAS -->
+    <div data-view="tareas" class="hidden">
+      <div class="card">
+        <h2>Tareas</h2>
+        <p style="margin-top:0;font-size:13.5px">Suba su trabajo en PDF, Word o Excel (máximo 10 MB). Mientras el facilitador no lo califique, puede borrarlo y subirlo de nuevo.</p>
+        <div id="tareasBox"></div>
+      </div>
+    </div>
+
+    <!-- MATERIALES -->
+    <div data-view="materiales" class="hidden">
+      <div class="card">
+        <h2>Materiales de clase</h2>
+        <div id="matBox"></div>
+      </div>
+    </div>
+
+    <!-- AYUDA -->
+    <div data-view="ayuda" class="hidden">
+      <div class="card">
+        <h2>Conceptos clave</h2>
+        <ul class="tight">
+          <li><b>Factura electrónica:</b> documento que se emite, firma y valida en línea. Queda registrado en la DGI desde el momento de su emisión.</li>
+          <li><b>CUFE</b> (Código Único de Factura Electrónica): código que identifica cada factura. Sin CUFE, la factura no tiene validez.</li>
+          <li><b>CAFE</b> (Comprobante Auxiliar de Factura Electrónica): la representación impresa o en PDF de la factura, con su CUFE y un código QR para consultarla.</li>
+          <li><b>PAC</b> (Proveedor de Autorización Calificado): empresa autorizada que valida y autoriza las facturas electrónicas.</li>
+          <li><b>Facturador Gratuito:</b> herramienta de la DGI para contribuyentes pequeños: ingresos brutos anuales hasta B/.36,000 y hasta 100 documentos al mes (confirme el límite vigente con la DGI).</li>
+        </ul>
+        <h3>Tipos de receptor</h3>
+        <ul class="tight">
+          <li><b>Contribuyente:</b> empresa o persona con RUC. Requiere RUC, DV y nombre.</li>
+          <li><b>Consumidor final:</b> persona que compra para su uso. El RUC o la cédula son opcionales.</li>
+          <li><b>Gobierno:</b> entidad del Estado. Requiere RUC y DV; en la vida real hay que mostrar las retenciones.</li>
+          <li><b>Extranjero:</b> se identifica con pasaporte o identificación de su país.</li>
+        </ul>
+        <h3>Errores frecuentes</h3>
+        <ul class="tight">
+          <li>Escribir mal el RUC o el DV del cliente.</li>
+          <li>Facturar a «consumidor final» a una empresa que necesita el crédito fiscal del ITBMS.</li>
+          <li>Aplicar 7 % a un producto exento, o al revés.</li>
+          <li>Intentar «editar» una factura ya emitida: se corrige con una <b>nota de crédito</b> o una <b>nota de débito</b>.</li>
+        </ul>
+        <h3>Fuentes oficiales</h3>
+        <ul class="tight">
+          <li><a href="https://dgi.mef.gob.pa/_7FacturaElectronica/fpreguntas" target="_blank" rel="noopener">Preguntas frecuentes de factura electrónica – DGI</a></li>
+          <li><a href="https://dgi.mef.gob.pa/_7FacturaElectronica/f-Gratuito" target="_blank" rel="noopener">Modalidad Facturador Gratuito – DGI</a></li>
+          <li><a href="https://dgi.mef.gob.pa/_7FacturaElectronica/R-Emisorfe" target="_blank" rel="noopener">¿Cómo ser emisor de factura electrónica? – DGI</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- DOCENTE -->
+    <div data-view="docente" class="hidden">
+      <div class="sub-nav" id="dcNav">
+        <button data-dc="progreso" class="active">Progreso y notas</button>
+        <button data-dc="entregas">Entregas</button>
+        <button data-dc="publicar">Publicar</button>
+        <button data-dc="acceso">Estudiantes autorizados</button>
+      </div>
+
+      <div data-dcv="progreso">
+        <div class="card">
+          <div class="row"><h2 style="margin:0">Progreso y notas</h2><button class="btn small secondary right" id="btnRefresh">Actualizar</button><button class="btn small" id="btnCsv">Descargar Excel (CSV)</button></div>
+          <p class="hint">La nota de la evaluación se recalcula aquí con los documentos que cada estudiante emitió, así que no depende de lo que el estudiante reporte.</p>
+          <div class="tablewrap"><table><thead id="pgHead"></thead><tbody id="pgBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <div data-dcv="entregas" class="hidden">
+        <div class="card">
+          <h2>Entregas de tareas</h2>
+          <div class="grid"><div><label for="dcTarea">Tarea</label><select id="dcTarea"></select></div></div>
+          <div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Estudiante</th><th>Entregado</th><th>Archivo</th><th>Calificación</th><th>Comentario para el estudiante</th><th></th></tr></thead><tbody id="enBody"></tbody></table></div>
+          <p class="hint" id="enFalta"></p>
+        </div>
+      </div>
+
+      <div data-dcv="publicar" class="hidden">
+        <div class="card">
+          <h2>Publicar un anuncio</h2>
+          <div class="field"><label for="anTit">Título</label><input id="anTit"></div>
+          <div class="field"><label for="anBody">Texto</label><textarea id="anBody" rows="4"></textarea></div>
+          <button class="btn" id="btnAn">Publicar anuncio</button>
+          <div class="msgs" id="anMsg"></div>
+          <h3>Anuncios publicados</h3><div id="anList"></div>
+        </div>
+        <div class="card">
+          <h2>Publicar una tarea</h2>
+          <div class="grid">
+            <div><label for="taTit">Título</label><input id="taTit"></div>
+            <div><label for="taFecha">Fecha de entrega</label><input id="taFecha" type="date"></div>
+            <div><label for="taPts">Puntos</label><input id="taPts" type="number" value="100" min="1"></div>
+          </div>
+          <div class="field" style="margin-top:10px"><label for="taDesc">Instrucciones</label><textarea id="taDesc" rows="5"></textarea></div>
+          <button class="btn" id="btnTa">Publicar tarea</button>
+          <div class="msgs" id="taMsg"></div>
+          <h3>Tareas publicadas</h3><div id="taList"></div>
+        </div>
+        <div class="card">
+          <h2>Publicar un material</h2>
+          <div class="grid">
+            <div><label for="maTit">Título</label><input id="maTit" placeholder="Ej.: Presentación de la sesión 2"></div>
+            <div><label for="maUrl">Enlace (opcional)</label><input id="maUrl" placeholder="https://..."></div>
+            <div><label for="maFile">O suba un archivo (máx. 20 MB)</label><input id="maFile" type="file"></div>
+          </div>
+          <div class="row" style="margin-top:10px"><button class="btn" id="btnMa">Publicar material</button></div>
+          <div class="msgs" id="maMsg"></div>
+          <h3>Materiales publicados</h3><div id="maList"></div>
+        </div>
+      </div>
+
+      <div data-dcv="acceso" class="hidden">
+        <div class="card">
+          <h2>Autorizar estudiantes</h2>
+          <p style="margin-top:0;font-size:13.5px">Escriba una persona por línea: <span class="kbd">correo; nombre</span>. Después avísele que entre a esta página y pulse <b>Crear mi cuenta</b> con ese correo.</p>
+          <textarea id="acNew" rows="4" placeholder="estudiante@gmail.com; Nombre Apellido"></textarea>
+          <div class="row" style="margin-top:10px"><button class="btn" id="btnAc">Autorizar</button></div>
+          <div class="msgs" id="acMsg"></div>
+          <div class="tablewrap" style="margin-top:10px"><table><thead><tr><th>Correo</th><th>Nombre</th><th>Rol</th><th>Cuenta</th><th></th></tr></thead><tbody id="acBody"></tbody></table></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<div class="overlay hidden" id="cafeOverlay"><div style="width:100%;max-width:760px">
+  <div class="row" style="margin-bottom:8px"><span class="pill ok" id="cafeStatus">Documento autorizado (simulado)</span><button class="btn small right" id="cafeClose">Cerrar</button></div>
+  <div class="cafe" id="cafe"></div>
+</div></div>
+
+<script>
+/* ======== Configuración (la llena el facilitador al publicar) ======== */
+const SUPABASE_URL = 'https://mhtxvdngkotgltbgzjop.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6sqbPKkM9Izb3KmYQ6JwQA_KCXr9a9O';
+const LIVE = /^https:\/\//.test(SUPABASE_URL);
+const EVAL_ID = 'fe-sesion2';
+
+const EMISORES = [
+  {id:'E1', nombre:'Ferretería La Práctica, S.A.', ruc:'155700001-2-2021', dv:'45', dir:'Vía España, Ciudad de Panamá', tel:'200-0001', act:'Venta de artículos de ferretería'},
+  {id:'E2', nombre:'Aula Contable Consultores, S.A.', ruc:'155700002-2-2022', dv:'18', dir:'Calle 50, Ciudad de Panamá', tel:'200-0002', act:'Servicios de contabilidad y asesoría'},
+  {id:'E3', nombre:'Ana Práctica (persona natural)', ruc:'8-000-1234', dv:'72', dir:'David, Chiriquí', tel:'6000-0003', act:'Diseño gráfico independiente'},
+  {id:'E4', nombre:'Minisúper El Ejercicio, S.A.', ruc:'155700004-2-2023', dv:'61', dir:'Vía Transístmica, San Miguelito', tel:'200-0004', act:'Venta al por menor de alimentos, bebidas y tabaco'}
+];
+const TIPODOC = {'01':'Factura de operación interna','03':'Factura de exportación','04':'Nota de crédito','05':'Nota de débito'};
+const TIPOREC = {'01':'Contribuyente','02':'Consumidor final','03':'Gobierno','04':'Extranjero'};
+const FORMAPAGO = {'01':'Crédito','02':'Efectivo','03':'Tarjeta de crédito','04':'Tarjeta de débito','08':'Transferencia / ACH'};
+const TASAS = [{v:0,t:'Exento (0 %)'},{v:7,t:'7 %'},{v:10,t:'10 %'},{v:15,t:'15 %'}];
+
+const CASES = [
+  {id:'c1', titulo:'Caso 1 · Venta a una empresa', emisor:'E1',
+   texto:'Ferretería La Práctica le vende a <b>Constructora Ejemplo, S.A.</b> (RUC 155700500-2-2020, DV 33) 10 bolsas de cemento a B/.9.50 cada una. Pago en efectivo.',
+   check:d=>d.emisor==='E1'&&d.tipoDoc==='01'&&d.receptor.tipo==='01'&&norm(d.receptor.ruc)==='155700500-2-2020'&&d.receptor.dv==='33'&&near(d.totales.total,101.65),
+   pista:'Subtotal B/.95.00 + ITBMS 7 % (B/.6.65) = B/.101.65. Receptor tipo 01 (contribuyente).'},
+  {id:'c2', titulo:'Caso 2 · Consumidor final con producto exento', emisor:'E1',
+   texto:'Una persona compra para su casa 1 martillo a B/.12.00 (7 %) y 2 libras de arroz a B/.0.75 cada una (exento). Pago con tarjeta de débito. No pide factura a nombre de nadie.',
+   check:d=>d.emisor==='E1'&&d.tipoDoc==='01'&&d.receptor.tipo==='02'&&near(d.totales.total,14.34),
+   pista:'Martillo 12.00 + ITBMS 0.84; arroz 1.50 exento. Total B/.14.34. Receptor tipo 02.'},
+  {id:'c3', titulo:'Caso 3 · Servicio a un cliente del extranjero', emisor:'E2',
+   texto:'Aula Contable Consultores asesora a <b>Inversiones Andinas S.A.S.</b> de Colombia (identificación NIT-900123456) por B/.1,500.00. El servicio se usa solo en Colombia. Pago por transferencia.',
+   check:d=>d.emisor==='E2'&&d.tipoDoc==='03'&&d.receptor.tipo==='04'&&near(d.totales.total,1500)&&near(d.totales.itbms,0),
+   pista:'Factura de exportación, receptor 04 (extranjero), ítem exento: el servicio surte efecto fuera de Panamá. Total B/.1,500.00.'},
+  {id:'c4', titulo:'Caso 4 · Corregir una factura con nota de crédito', emisor:'E1',
+   texto:'Constructora Ejemplo devolvió 2 de las 10 bolsas de cemento del Caso 1. Emita la <b>nota de crédito</b> que corresponde, con referencia a esa factura.',
+   check:d=>d.emisor==='E1'&&d.tipoDoc==='04'&&!!d.ref&&near(d.totales.total,20.33),
+   pista:'2 bolsas × B/.9.50 = B/.19.00 + ITBMS 7 % (B/.1.33) = B/.20.33. Tipo de documento: nota de crédito, con la factura del Caso 1 como referencia.'},
+  {id:'c5', titulo:'Caso 5 · Venta al Estado', emisor:'E2',
+   texto:'Aula Contable Consultores dicta una capacitación al <b>Ministerio de Ejemplo</b> (RUC 8-NT-1-12345, DV 10) por B/.800.00 + ITBMS. Pago a crédito, 30 días.',
+   check:d=>d.emisor==='E2'&&d.tipoDoc==='01'&&d.receptor.tipo==='03'&&near(d.totales.total,856)&&d.pago.forma==='01',
+   pista:'800.00 + ITBMS 7 % (56.00) = B/.856.00. Receptor 03 (gobierno), forma de pago crédito. En la vida real, la factura al Estado muestra las retenciones.'}
+];
+
+/* ---------- utilidades ---------- */
+const $ = s=>document.querySelector(s);
+const $$ = s=>[...document.querySelectorAll(s)];
+const r2 = n=>Math.round((n+Number.EPSILON)*100)/100;
+const money = n=>'B/.'+r2(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const near = (a,b)=>Math.abs(a-b)<0.006;
+const norm = s=>(s||'').trim().toUpperCase().replace(/\s+/g,'');
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function todayISO(){const d=new Date();d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
+
+/* SHA-256 (independiente de crypto.subtle) */
+function sha256(ascii){
+  function rr(v,a){return (v>>>a)|(v<<(32-a))}
+  const mp=Math.pow,maxWord=mp(2,32);let result='',words=[],asciiBitLength=ascii.length*8;
+  let hash=[],k=[],primeCounter=0;const isComposite={};
+  for(let candidate=2;primeCounter<64;candidate++){if(!isComposite[candidate]){for(let i=0;i<313;i+=candidate)isComposite[i]=candidate;hash[primeCounter]=(mp(candidate,.5)*maxWord)|0;k[primeCounter++]=(mp(candidate,1/3)*maxWord)|0}}
+  hash=hash.slice(0,8);
+  ascii=unescape(encodeURIComponent(ascii));asciiBitLength=ascii.length*8;
+  ascii+='\x80';while(ascii.length%64-56)ascii+='\x00';
+  for(let i=0;i<ascii.length;i++){const j=ascii.charCodeAt(i);words[i>>2]|=j<<((3-i)%4)*8}
+  words[words.length]=((asciiBitLength/maxWord)|0);words[words.length]=(asciiBitLength);
+  for(let j=0;j<words.length;){const w=words.slice(j,j+=16);const oldHash=hash;hash=hash.slice(0,8);
+    for(let i=0;i<64;i++){const w15=w[i-15],w2=w[i-2];const a=hash[0],e=hash[4];
+      const temp1=hash[7]+(rr(e,6)^rr(e,11)^rr(e,25))+((e&hash[5])^((~e)&hash[6]))+k[i]+(w[i]=(i<16)?w[i]:(w[i-16]+(rr(w15,7)^rr(w15,18)^(w15>>>3))+w[i-7]+(rr(w2,17)^rr(w2,19)^(w2>>>10)))|0);
+      const temp2=(rr(a,2)^rr(a,13)^rr(a,22))+((a&hash[1])^(a&hash[2])^(hash[1]&hash[2]));
+      hash=[(temp1+temp2)|0].concat(hash);hash[4]=(hash[4]+temp1)|0}
+    for(let i=0;i<8;i++)hash[i]=(hash[i]+oldHash[i])|0}
+  for(let i=0;i<8;i++)for(let j=3;j+1;j--){const b=(hash[i]>>(j*8))&255;result+=((b<16)?0:'')+b.toString(16)}
+  return result;
+}
+
+/* ======== Capa de datos: Supabase o modo de prueba local ======== */
+const api = LIVE ? supaApi() : mockApi();
+
+function supaApi(){
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const chk = r => { if (r.error) throw r.error; return r.data; };
+  return {
+    sb,
+    async session(){ const { data } = await sb.auth.getSession(); return data.session ? { id:data.session.user.id, email:data.session.user.email } : null; },
+    async autorizado(email){ return chk(await sb.rpc('correo_autorizado', { correo: email })); },
+    async signIn(email, pw){ chk(await sb.auth.signInWithPassword({ email, password: pw })); },
+    async signUp(email, pw){ const d = chk(await sb.auth.signUp({ email, password: pw })); if (!d.session) throw new Error('CONFIRM'); },
+    async signOut(){ await sb.auth.signOut(); },
+    async reset(email){ chk(await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname })); },
+    async newPassword(pw){ chk(await sb.auth.updateUser({ password: pw })); },
+    onRecovery(cb){ sb.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') cb(); }); },
+    async list(t, order='creado'){ return chk(await sb.from(t).select('*').order(order, { ascending:false })); },
+    async insert(t, row){ return chk(await sb.from(t).insert(row).select().single()); },
+    async upsert(t, row){ return chk(await sb.from(t).upsert(row).select().single()); },
+    async update(t, match, patch){ return chk(await sb.from(t).update(patch).match(match).select()); },
+    async remove(t, match){ chk(await sb.from(t).delete().match(match)); },
+    async upload(bucket, path, file){ chk(await sb.storage.from(bucket).upload(path, file, { upsert:false })); },
+    async fileUrl(bucket, path, nombre){ return chk(await sb.storage.from(bucket).createSignedUrl(path, 600, nombre ? { download: nombre } : undefined)).signedUrl; },
+    async removeFile(bucket, path){ chk(await sb.storage.from(bucket).remove([path])); }
+  };
+}
+
+/* Modo de prueba: imita la base de datos en este navegador para revisar la app antes de conectarla */
+function mockApi(){
+  const K = 'aulaisae-mock:';
+  const get = (k, d) => { try { return JSON.parse(localStorage.getItem(K+k)) ?? d; } catch(e){ return d; } };
+  const put = (k, v) => { try { localStorage.setItem(K+k, JSON.stringify(v)); } catch(e){} };
+  const uid = () => 'u' + Math.random().toString(16).slice(2) + Date.now().toString(16);
+  const now = () => new Date().toISOString();
+  if (!get('seed', false)) {
+    put('acceso', [
+      { email:'ovelasquez2014@gmail.com', nombre:'Lic. Osmar Velásquez', rol:'docente', creado:now() },
+      { email:'estudiante@prueba.com', nombre:'Estudiante de Prueba', rol:'estudiante', creado:now() }
+    ]);
+    put('tareas', [{ id:uid(), titulo:'Taller 1 · Mapa de obligaciones de una empresa', descripcion:'Tarea de ejemplo del modo de prueba.', fecha_entrega:'2026-11-19', puntos:100, creado:now() }]);
+    put('anuncios', [{ id:uid(), titulo:'Bienvenidos', cuerpo:'Anuncio de ejemplo del modo de prueba.', creado:now() }]);
+    put('seed', true);
+  }
+  let me = null; try { me = JSON.parse(sessionStorage.getItem(K+'me')); } catch(e){}
+  const perfil = () => me && get('perfiles', []).find(p => p.id === me.id);
+  const docente = () => perfil()?.rol === 'docente';
+  const OWN = { documentos:'user_id', notas:'user_id', entregas:'user_id', perfiles:'id' };
+  const visible = (t, rows) => {
+    if (t === 'acceso') return docente() ? rows : [];
+    if (OWN[t] && !docente()) return rows.filter(r => r[OWN[t]] === me?.id);
+    return rows;
+  };
+  const deny = () => { throw new Error('Sin permiso (modo de prueba).'); };
+  const canWrite = t => ['tareas','anuncios','materiales','acceso'].includes(t) ? docente() : true;
+  const match = (r, m) => Object.entries(m).every(([k,v]) => r[k] === v);
+  return {
+    mock:true,
+    async session(){ return me; },
+    async autorizado(email){ return get('acceso', []).some(a => a.email === email.toLowerCase()); },
+    async signIn(email, pw){
+      const u = get('users', {})[email.toLowerCase()];
+      if (!u || u.pw !== pw) throw new Error('Invalid login credentials');
+      me = { id:u.id, email:email.toLowerCase() }; sessionStorage.setItem(K+'me', JSON.stringify(me));
+    },
+    async signUp(email, pw){
+      email = email.toLowerCase();
+      const users = get('users', {}); if (users[email]) throw new Error('User already registered');
+      const a = get('acceso', []).find(x => x.email === email); if (!a) throw new Error('no autorizado');
+      const id = uid(); users[email] = { id, pw }; put('users', users);
+      const ps = get('perfiles', []); ps.push({ id, email, nombre:a.nombre, rol:a.rol, creado:now() }); put('perfiles', ps);
+      me = { id, email }; sessionStorage.setItem(K+'me', JSON.stringify(me));
+    },
+    async signOut(){ me = null; sessionStorage.removeItem(K+'me'); },
+    async reset(){ },
+    async newPassword(){ },
+    onRecovery(){ },
+    async list(t, order='creado'){ return visible(t, get(t, [])).slice().sort((a,b) => String(b[order]||'').localeCompare(String(a[order]||''))); },
+    async insert(t, row){
+      if (!canWrite(t)) deny();
+      const rows = get(t, []); const r = { creado:now(), ...row };
+      if (t !== 'acceso' && t !== 'notas' && !r.id) r.id = uid();
+      if (['documentos','notas','entregas'].includes(t)) r.user_id = me.id;
+      if (t === 'acceso' && rows.some(x => x.email === r.email)) throw new Error('duplicate key');
+      rows.push(r); put(t, rows); return r;
+    },
+    async upsert(t, row){
+      const rows = get(t, []); const r = { ...row, user_id: me.id, actualizado: now() };
+      const i = rows.findIndex(x => x.user_id === r.user_id && x.evaluacion === r.evaluacion);
+      if (i >= 0) rows[i] = r; else rows.push(r); put(t, rows); return r;
+    },
+    async update(t, m, patch){
+      if (t === 'entregas' && !docente()) deny();
+      const rows = get(t, []); const out = [];
+      rows.forEach(r => { if (match(r, m) && (docente() || !OWN[t] || r[OWN[t]] === me.id)) { Object.assign(r, patch); out.push(r); } });
+      put(t, rows); return out;
+    },
+    async remove(t, m){
+      if (!canWrite(t)) deny();
+      put(t, get(t, []).filter(r => !(match(r, m) && (docente() || !OWN[t] || r[OWN[t]] === me.id))));
+    },
+    async upload(bucket, path, file){
+      const data = await new Promise((ok, ko) => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.onerror = ko; fr.readAsDataURL(file); });
+      try { localStorage.setItem(K+'file:'+bucket+'/'+path, data); } catch(e){ throw new Error('Archivo muy grande para el modo de prueba.'); }
+    },
+    async fileUrl(bucket, path){ return localStorage.getItem(K+'file:'+bucket+'/'+path) || '#'; },
+    async removeFile(bucket, path){ localStorage.removeItem(K+'file:'+bucket+'/'+path); }
+  };
+}
+
+/* ======== Estado ======== */
+let ME = null, PERFIL = null, IS_TEACHER = false;
+let STATE = { docs: [], emisor: 'E1' };   // docs: lo que emitió el usuario (data + dbid)
+let NOTAS = [], TAREAS = [], ENTREGAS = [], ANUNCIOS = [], MATERIALES = [];
+function prefKey(){ return 'aulaisae:emisor:' + (ME ? ME.id : ''); }
+function loadPrefs(){ try { STATE.emisor = localStorage.getItem(prefKey()) || 'E1'; } catch(e){} }
+function save(){ try { localStorage.setItem(prefKey(), STATE.emisor); } catch(e){} }
+const fdate = s => s ? new Date(s).toLocaleString('es-PA', { dateStyle:'medium', timeStyle:'short' }) : '';
+const fday = s => s ? new Date(s + 'T12:00:00').toLocaleDateString('es-PA', { weekday:'long', day:'numeric', month:'long' }) : 'sin fecha';
+function errText(e){
+  const m = String(e && (e.message || e.error_description || e) || '');
+  if (/Invalid login credentials/i.test(m)) return 'El correo o la contraseña no coinciden. Si todavía no tiene cuenta, use «Crear mi cuenta».';
+  if (/already registered|already been registered/i.test(m)) return 'Ese correo ya tiene cuenta. Use «Ingresar» o «Olvidé mi contraseña».';
+  if (/not authorized|no autorizado|Database error saving new user/i.test(m)) return 'Este correo no está autorizado. Pida acceso al facilitador.';
+  if (/rate limit|security purposes/i.test(m)) return 'Hubo demasiados intentos seguidos. Espere un minuto y vuelva a intentar.';
+  if (/Password should be/i.test(m)) return 'La contraseña es muy corta o muy simple.';
+  if (/Failed to fetch|NetworkError/i.test(m)) return 'No hay conexión con el servidor. Revise su internet.';
+  if (m === 'CONFIRM') return 'Cuenta creada. Revise su correo para confirmarla y luego ingrese.';
+  return m || 'Ocurrió un error.';
+}
+const okMsg = (box, t) => { $(box).innerHTML = `<div class="msg ok">✓ ${esc(t)}</div>`; };
+const errMsg = (box, e) => { $(box).innerHTML = `<div class="msg err">${esc(typeof e === 'string' ? e : errText(e))}</div>`; };
+async function busy(btn, fn){ const t = btn.textContent; btn.disabled = true; btn.textContent = 'Un momento…'; try { return await fn(); } finally { btn.disabled = false; btn.textContent = t; } }
+
+/* ======== Acceso ======== */
+if (!LIVE) $('#mockbar').classList.remove('hidden');
+$('#authTabs').addEventListener('click', e => {
+  const k = e.target.dataset.auth; if (!k) return;
+  $$('#authTabs button').forEach(b => b.classList.toggle('active', b === e.target));
+  $('#fIn').classList.toggle('hidden', k !== 'in'); $('#fUp').classList.toggle('hidden', k !== 'up');
+  $('#fReset').classList.toggle('hidden', k !== 'reset'); $('#fNewPw').classList.add('hidden'); $('#authMsg').innerHTML = '';
+});
+$('#fIn').addEventListener('submit', async e => {
+  e.preventDefault(); $('#authMsg').innerHTML = '';
+  try { await busy(e.submitter || $('#fIn .btn'), () => api.signIn($('#inEmail').value.trim().toLowerCase(), $('#inPw').value)); await start(); }
+  catch(err){ errMsg('#authMsg', err); }
+});
+$('#fUp').addEventListener('submit', async e => {
+  e.preventDefault(); $('#authMsg').innerHTML = '';
+  const em = $('#upEmail').value.trim().toLowerCase(), pw = $('#upPw').value;
+  if (pw.length < 8) return errMsg('#authMsg', 'La contraseña debe tener al menos 8 caracteres.');
+  if (pw !== $('#upPw2').value) return errMsg('#authMsg', 'Las dos contraseñas no coinciden.');
+  try {
+    await busy(e.submitter || $('#fUp .btn'), async () => {
+      if (!(await api.autorizado(em))) throw new Error('no autorizado');
+      await api.signUp(em, pw);
+    });
+    await start();
+  } catch(err){ errMsg('#authMsg', err); }
+});
+$('#fReset').addEventListener('submit', async e => {
+  e.preventDefault();
+  try { await busy(e.submitter || $('#fReset .btn'), () => api.reset($('#rsEmail').value.trim().toLowerCase())); okMsg('#authMsg', 'Si el correo tiene cuenta, le llegará un enlace en unos minutos.'); }
+  catch(err){ errMsg('#authMsg', err); }
+});
+api.onRecovery(() => {
+  $('#appView').classList.add('hidden'); $('#loginView').classList.remove('hidden');
+  ['#fIn','#fUp','#fReset'].forEach(s => $(s).classList.add('hidden')); $('#authTabs').classList.add('hidden');
+  $('#fNewPw').classList.remove('hidden');
+});
+$('#fNewPw').addEventListener('submit', async e => {
+  e.preventDefault(); const pw = $('#npPw').value;
+  if (pw.length < 8) return errMsg('#authMsg', 'La contraseña debe tener al menos 8 caracteres.');
+  try { await api.newPassword(pw); $('#authTabs').classList.remove('hidden'); await start(); }
+  catch(err){ errMsg('#authMsg', err); }
+});
+$('#logout').addEventListener('click', async () => { await api.signOut(); location.hash = ''; location.reload(); });
+
+async function start(){
+  ME = await api.session(); if (!ME) return;
+  const ps = await api.list('perfiles');
+  PERFIL = ps.find(p => p.id === ME.id) || { nombre: '', rol: 'estudiante' };
+  IS_TEACHER = PERFIL.rol === 'docente';
+  loadPrefs();
+  $('#loginView').classList.add('hidden'); $('#appView').classList.remove('hidden');
+  $('#userbox').classList.remove('hidden');
+  $('#userlabel').textContent = (PERFIL.nombre || ME.email) + (IS_TEACHER ? ' · facilitador' : '');
+  $('#tabDocente').classList.toggle('hidden', !IS_TEACHER);
+  $('#hola').textContent = 'Bienvenido(a)' + (PERFIL.nombre ? ', ' + PERFIL.nombre.split(' ')[0] : '');
+  await reloadMine();
+  renderEmisor(); ITEMS = [newItem()]; renderItems();
+  show('inicio');
+}
+async function reloadMine(){
+  const [docs, notas, tareas, entregas, anuncios, materiales] = await Promise.all([
+    api.list('documentos'), api.list('notas', 'actualizado'), api.list('tareas'), api.list('entregas'), api.list('anuncios'), api.list('materiales')
+  ]);
+  STATE.docs = docs.filter(r => r.user_id === ME.id).map(r => ({ ...r.data, dbid: r.id }));
+  NOTAS = notas.filter(n => n.user_id === ME.id);
+  TAREAS = tareas; ENTREGAS = entregas.filter(x => x.user_id === ME.id); ANUNCIOS = anuncios; MATERIALES = materiales;
+}
+
+/* ======== Navegación ======== */
+function show(tab){
+  $$('#tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  $$('[data-view]').forEach(v => v.classList.toggle('hidden', v.dataset.view !== tab));
+  if (tab === 'inicio') renderInicio();
+  if (tab === 'emitidos') renderEmitidos();
+  if (tab === 'casos') renderCases();
+  if (tab === 'evaluacion') renderEval();
+  if (tab === 'emitir') prepareForm();
+  if (tab === 'tareas') renderTareas();
+  if (tab === 'materiales') renderMateriales();
+  if (tab === 'docente') dcShow(DC_TAB);
+  window.scrollTo(0, 0);
+}
+$('#tabs').addEventListener('click', e => { if (e.target.dataset.tab) show(e.target.dataset.tab); });
+document.addEventListener('click', e => { const g = e.target.closest('[data-goto]'); if (g) show(g.dataset.goto); });
+
+/* ======== Inicio ======== */
+function renderInicio(){
+  const casos = CASES.filter(c => STATE.docs.some(d => d.estado !== 'Anulado' && c.check(d))).length;
+  const nota = NOTAS.find(n => n.evaluacion === EVAL_ID);
+  const entregadas = TAREAS.filter(t => ENTREGAS.some(x => x.tarea_id === t.id)).length;
+  $('#miAvance').innerHTML = IS_TEACHER ? '<div class="hint">Use el <b>Panel del facilitador</b> para ver el avance del grupo.</div>' :
+    `<div class="stat"><b>${STATE.docs.length}</b><span>documentos emitidos</span></div>
+     <div class="stat"><b>${casos} / ${CASES.length}</b><span>casos de práctica resueltos</span></div>
+     <div class="stat"><b>${nota ? nota.nota + ' / 100' : '—'}</b><span>nota de la evaluación</span></div>
+     <div class="stat"><b>${entregadas} / ${TAREAS.length}</b><span>tareas entregadas</span></div>`;
+  $('#anunciosBox').innerHTML = ANUNCIOS.length ? ANUNCIOS.map(a => `<div class="ann"><h4>${esc(a.titulo)}</h4><div class="when">${fdate(a.creado)}</div><p>${esc(a.cuerpo || '')}</p></div>`).join('') : '<p class="hint">No hay anuncios.</p>';
+}
+
+/* ======== Emisor ======== */
+function emisor(){ return EMISORES.find(x => x.id === STATE.emisor) || EMISORES[0]; }
+function renderEmisor(){
+  $('#emisorSel').innerHTML = EMISORES.map(x => `<option value="${x.id}" ${x.id === STATE.emisor ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('');
+  const e = emisor();
+  $('#emisorInfo').innerHTML = `<b>${esc(e.nombre)}</b><br>RUC ${esc(e.ruc)} · DV ${esc(e.dv)}<br>${esc(e.act)}<br><span class="hint">Datos ficticios para práctica</span>`;
+}
+$('#emisorSel').addEventListener('change', e => { STATE.emisor = e.target.value; save(); renderEmisor(); });
+
+/* ---------- formulario ---------- */
+let ITEMS=[];
+function newItem(){return {cod:'',desc:'',cant:1,precio:0,desc_:0,tasa:7}}
+function nextNum(){const pto=($('#fPto').value||'001').padStart(3,'0');const t=$('#fTipoDoc').value;const n=STATE.docs.filter(d=>d.emisor===STATE.emisor&&d.tipoDoc===t&&d.pto===pto).reduce((m,d)=>Math.max(m,parseInt(d.numero,10)||0),0);return String(n+1).padStart(10,'0')}
+function prepareForm(){
+  const e=emisor();
+  $('#fEmisor').value=e.nombre+' · RUC '+e.ruc+' DV '+e.dv;
+  if(!$('#fFecha').value)$('#fFecha').value=todayISO();
+  if(!ITEMS.length){ITEMS=[newItem()];renderItems()}
+  $('#fNum').value=nextNum();
+  refreshRef();refreshReceptor();refreshPago();calc();
+}
+function refreshRef(){
+  const t=$('#fTipoDoc').value, isNota=(t==='04'||t==='05');
+  $('#refBox').classList.toggle('hidden',!isNota);
+  const facts=STATE.docs.filter(d=>d.emisor===STATE.emisor&&(d.tipoDoc==='01'||d.tipoDoc==='03')&&d.estado!=='Anulado');
+  $('#fRef').innerHTML='<option value="">— Seleccione —</option>'+facts.map(d=>`<option value="${d.id}">${d.numero} · ${esc(d.receptor.nombre||'Consumidor final')} · ${money(d.totales.total)}</option>`).join('');
+  $('#fNum').value=nextNum();
+}
+function refreshReceptor(){
+  const t=$('#rTipo').value;
+  const ext=t==='04', cf=t==='02', contrib=t==='01';
+  $('#rTipoContribBox').classList.toggle('hidden',!contrib);
+  $('#rRucBox').classList.toggle('hidden',ext);$('#rDvBox').classList.toggle('hidden',ext);
+  $('#rPasBox').classList.toggle('hidden',!ext);$('#rPaisBox').classList.toggle('hidden',!ext);
+  $('#rRucReq').classList.toggle('hidden',cf);$('#rDvReq').classList.toggle('hidden',cf);$('#rNomReq').classList.toggle('hidden',cf);
+  $('#rHint').textContent={
+    '01':'Contribuyente: necesita RUC, DV y nombre. Así el cliente puede usar el ITBMS como crédito fiscal.',
+    '02':'Consumidor final: el RUC o la cédula y el nombre son opcionales.',
+    '03':'Gobierno: necesita RUC y DV. En la vida real la factura al Estado debe mostrar las retenciones.',
+    '04':'Extranjero: se identifica con pasaporte o identificación de su país, y se indica el país.'}[t];
+}
+function refreshPago(){$('#pPlazoBox').classList.toggle('hidden',$('#pForma').value!=='01')}
+$('#fTipoDoc').addEventListener('change',refreshRef);
+$('#fPto').addEventListener('input',()=>{$('#fNum').value=nextNum()});
+$('#rTipo').addEventListener('change',refreshReceptor);
+$('#pForma').addEventListener('change',refreshPago);
+
+function renderItems(){
+  $('#itemsBody').innerHTML=ITEMS.map((it,i)=>`<tr>
+    <td><input data-i="${i}" data-k="cod" value="${esc(it.cod)}" maxlength="10"></td>
+    <td><input data-i="${i}" data-k="desc" value="${esc(it.desc)}" placeholder="Descripción del bien o servicio"></td>
+    <td class="num"><input data-i="${i}" data-k="cant" type="number" step="0.01" min="0" value="${it.cant}" style="text-align:right"></td>
+    <td class="num"><input data-i="${i}" data-k="precio" type="number" step="0.01" min="0" value="${it.precio}" style="text-align:right"></td>
+    <td class="num"><input data-i="${i}" data-k="desc_" type="number" step="0.01" min="0" value="${it.desc_}" style="text-align:right"></td>
+    <td><select data-i="${i}" data-k="tasa">${TASAS.map(t=>`<option value="${t.v}" ${t.v==it.tasa?'selected':''}>${t.t}</option>`).join('')}</select></td>
+    <td class="num" id="it-tot-${i}"></td>
+    <td><button type="button" class="btn small danger" data-del="${i}" title="Quitar ítem" aria-label="Quitar ítem">×</button></td>
+  </tr>`).join('');
+  calc();
+}
+$('#itemsBody').addEventListener('input',e=>{const el=e.target;if(el.dataset.k==null)return;const it=ITEMS[+el.dataset.i];const k=el.dataset.k;it[k]=(k==='cod'||k==='desc')?el.value:(parseFloat(el.value)||0);calc()});
+$('#itemsBody').addEventListener('change',e=>{const el=e.target;if(el.dataset.k==='tasa'){ITEMS[+el.dataset.i].tasa=parseFloat(el.value);calc()}});
+$('#itemsBody').addEventListener('click',e=>{const d=e.target.dataset.del;if(d!=null){ITEMS.splice(+d,1);if(!ITEMS.length)ITEMS=[newItem()];renderItems()}});
+$('#addItem').addEventListener('click',()=>{ITEMS.push(newItem());renderItems()});
+
+function totals(items){
+  let sub=0,des=0,itb=0;const porTasa={};
+  items.forEach(it=>{const bruto=r2(it.cant*it.precio);const neto=r2(bruto-it.desc_);const imp=r2(neto*it.tasa/100);sub+=bruto;des+=it.desc_;itb+=imp;porTasa[it.tasa]=(porTasa[it.tasa]||0)+imp});
+  return {subtotal:r2(sub),descuentos:r2(des),neto:r2(sub-des),itbms:r2(itb),porTasa,total:r2(sub-des+itb)};
+}
+function calc(){
+  ITEMS.forEach((it,i)=>{const c=$('#it-tot-'+i);if(c){const neto=r2(it.cant*it.precio-it.desc_);c.textContent=money(neto+r2(neto*it.tasa/100))}});
+  const t=totals(ITEMS);
+  const tasas=Object.keys(t.porTasa).filter(k=>+k>0).sort((a,b)=>a-b).map(k=>`<div><span>ITBMS ${k} %</span><span>${money(t.porTasa[k])}</span></div>`).join('');
+  $('#totalsBox').innerHTML=`<div><span>Subtotal</span><span>${money(t.subtotal)}</span></div><div><span>Descuentos</span><span>-${money(t.descuentos)}</span></div><div><span>Base neta</span><span>${money(t.neto)}</span></div>${tasas}<div><span>Total ITBMS</span><span>${money(t.itbms)}</span></div><div class="grand"><span>Total</span><span>${money(t.total)}</span></div>`;
+  if(document.activeElement!==$('#pMonto'))$('#pMonto').value=t.total.toFixed(2);
+  return t;
+}
+
+/* ---------- validación ---------- */
+const RUC_NAT=/^(PE|E|N|[1-9]|1[0-3])(AV|PI)?-\d{1,4}-\d{1,6}$/;
+const RUC_JUR=/^\d{1,10}-\d{1,4}-\d{1,7}$/;
+const RUC_GOB=/^(\d{1,2}-NT-\d{1,4}-\d{1,7}|\d{1,10}-\d{1,4}-\d{1,7})$/;
+function collect(){
+  return {
+    emisor:STATE.emisor, tipoDoc:$('#fTipoDoc').value, fecha:$('#fFecha').value, pto:($('#fPto').value||'001').padStart(3,'0'),
+    ref:$('#fRef').value||null, motivo:$('#fMotivo').value.trim(),
+    receptor:{tipo:$('#rTipo').value, tipoContrib:$('#rTipoContrib').value, ruc:norm($('#rRuc').value), dv:$('#rDv').value.trim(), pas:$('#rPas').value.trim(), pais:$('#rPais').value.trim(), nombre:$('#rNombre').value.trim(), dir:$('#rDir').value.trim(), correo:$('#rCorreo').value.trim()},
+    items:ITEMS.map(x=>({...x})), totales:totals(ITEMS),
+    pago:{forma:$('#pForma').value, monto:parseFloat($('#pMonto').value)||0, plazo:$('#pPlazo').value}
+  };
+}
+function validate(d){
+  const E=[],W=[];const bad=[];
+  const r=d.receptor;
+  if(!d.fecha){E.push('Indique la fecha de emisión.');bad.push('#fFecha')}
+  else if(d.fecha>todayISO()){E.push('La fecha de emisión no puede ser futura.');bad.push('#fFecha')}
+  if(!/^\d{3}$/.test(d.pto)){E.push('El punto de facturación debe tener 3 dígitos (ej.: 001).');bad.push('#fPto')}
+  if(d.tipoDoc==='04'||d.tipoDoc==='05'){
+    if(!d.ref){E.push('Una nota de crédito o débito debe indicar la factura que corrige.');bad.push('#fRef')}
+    if(!d.motivo){E.push('Indique el motivo de la nota.');bad.push('#fMotivo')}
+    const f=STATE.docs.find(x=>x.id===d.ref);
+    if(f&&d.tipoDoc==='04'){
+      const prev=STATE.docs.filter(x=>x.ref===f.id&&x.tipoDoc==='04'&&x.estado!=='Anulado').reduce((s,x)=>s+x.totales.total,0);
+      if(d.totales.total>r2(f.totales.total-prev)+0.005)E.push('La nota de crédito no puede ser mayor que el saldo de la factura que corrige ('+money(f.totales.total-prev)+').');
+      if(f.receptor.tipo!==r.tipo||(r.tipo!=='02'&&r.tipo!=='04'&&norm(f.receptor.ruc)!==r.ruc))W.push('El receptor de la nota debería ser el mismo de la factura original ('+(f.receptor.nombre||'consumidor final')+').');
+    }
+  }
+  if(r.tipo==='01'||r.tipo==='03'){
+    const re=r.tipo==='03'?RUC_GOB:(r.tipoContrib==='1'?RUC_NAT:RUC_JUR);
+    if(!r.ruc){E.push('El RUC del receptor es obligatorio para un '+TIPOREC[r.tipo].toLowerCase()+'.');bad.push('#rRuc')}
+    else if(!re.test(r.ruc)){E.push('El RUC «'+r.ruc+'» no tiene un formato válido para '+(r.tipo==='03'?'gobierno':(r.tipoContrib==='1'?'persona natural (ej.: 8-123-456)':'persona jurídica (ej.: 155712345-2-2021)'))+'.');bad.push('#rRuc')}
+    if(!/^\d{1,2}$/.test(r.dv)){E.push('El DV debe tener 1 o 2 dígitos.');bad.push('#rDv')}
+    if(!r.nombre){E.push('Indique el nombre o razón social del receptor.');bad.push('#rNombre')}
+    if(r.tipo==='03')W.push('Factura al Estado: en la vida real debe mostrar los campos de retenciones.');
+  }
+  if(r.tipo==='02'&&r.ruc&&!(RUC_NAT.test(r.ruc)||RUC_JUR.test(r.ruc))){E.push('Si escribe la cédula o el RUC del consumidor final, debe tener un formato válido.');bad.push('#rRuc')}
+  if(r.tipo==='04'){
+    if(!r.pas){E.push('Indique el pasaporte o la identificación del receptor extranjero.');bad.push('#rPas')}
+    if(!r.pais){E.push('Indique el país del receptor extranjero.');bad.push('#rPais')}
+    if(!r.nombre){E.push('Indique el nombre del receptor extranjero.');bad.push('#rNombre')}
+  }
+  if(r.correo&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(r.correo)){E.push('El correo del receptor no es válido.');bad.push('#rCorreo')}
+  if(d.tipoDoc==='03'&&r.tipo!=='04')E.push('Una factura de exportación debe emitirse a un receptor extranjero (tipo 04).');
+  if(d.tipoDoc==='03'&&d.totales.itbms>0)W.push('En una exportación los ítems normalmente van exentos de ITBMS.');
+  if(r.tipo==='02'&&d.totales.total>=1000)W.push('Venta grande a consumidor final: si el cliente es una empresa, debe facturarle como contribuyente para que use el crédito fiscal.');
+  const items=d.items.filter(x=>x.desc||x.precio||x.cod);
+  if(!items.length)E.push('Agregue al menos un ítem.');
+  d.items.forEach((it,i)=>{
+    const n=i+1;
+    if(!it.desc.trim())E.push('Ítem '+n+': falta la descripción.');
+    if(!(it.cant>0))E.push('Ítem '+n+': la cantidad debe ser mayor que cero.');
+    if(it.precio<0)E.push('Ítem '+n+': el precio no puede ser negativo.');
+    if(it.desc_<0||it.desc_>r2(it.cant*it.precio))E.push('Ítem '+n+': el descuento no puede ser negativo ni mayor que el valor del ítem.');
+    if(/arroz|leche|pan |huevo|medicin|medicamento/i.test(it.desc)&&it.tasa>0)W.push('Ítem '+n+': «'+it.desc+'» parece un producto exento. Revise la tarifa de ITBMS.');
+    if(/cerveza|licor|ron|whisky|vino|seco|hotel|hospedaje/i.test(it.desc)&&it.tasa!==10)W.push('Ítem '+n+': licores y hospedaje llevan 10 % de ITBMS.');
+    if(/cigarr|tabaco/i.test(it.desc)&&it.tasa!==15)W.push('Ítem '+n+': los productos de tabaco llevan 15 % de ITBMS.');
+  });
+  if(d.totales.total<=0)E.push('El total del documento debe ser mayor que cero.');
+  if(!near(d.pago.monto,d.totales.total)){E.push('El monto pagado ('+money(d.pago.monto)+') debe ser igual al total ('+money(d.totales.total)+').');bad.push('#pMonto')}
+  return {E,W,bad};
+}
+function showMsgs(v,okText){
+  $$('.bad').forEach(x=>x.classList.remove('bad'));v.bad.forEach(s=>$(s)&&$(s).classList.add('bad'));
+  let h=v.E.map(m=>`<div class="msg err">✗ ${esc(m)}</div>`).join('')+v.W.map(m=>`<div class="msg warn">⚠ ${esc(m)}</div>`).join('');
+  if(!v.E.length)h=`<div class="msg ok">✓ ${esc(okText)}</div>`+h;
+  $('#docMsgs').innerHTML=h;
+}
+$('#btnValidar').addEventListener('click',()=>{const d=collect();showMsgs(validate(d),'Validación correcta: el documento puede emitirse.')});
+$('#btnLimpiar').addEventListener('click',()=>{$('#docForm').reset();$('#fFecha').value=todayISO();ITEMS=[newItem()];renderItems();$('#docMsgs').innerHTML='';$$('.bad').forEach(x=>x.classList.remove('bad'));prepareForm()});
+
+function makeCufe(d){
+  const e=EMISORES.find(x=>x.id===d.emisor);
+  const base='FE'+d.tipoDoc+'-'+e.ruc.replace(/-/g,'')+e.dv+'-'+d.pto+d.numero+'-'+d.fecha.replace(/-/g,'');
+  return 'SIM-'+base+'-'+sha256(base+d.id).slice(0,12).toUpperCase();
+}
+
+$('#btnEmitir').addEventListener('click', async () => {
+  const d = collect(); const v = validate(d);
+  if (v.E.length){ showMsgs(v, ''); $('#docMsgs').insertAdjacentHTML('afterbegin', '<div class="msg err"><b>Documento rechazado.</b> Corrija los errores y vuelva a emitir.</div>'); return; }
+  d.numero = nextNum();
+  d.id = 'D' + Date.now(); d.estado = 'Autorizado (simulado)'; d.hora = new Date().toLocaleTimeString('es-PA');
+  d.cufe = makeCufe(d); d.protocolo = 'SIM' + Math.floor(1e9 + Math.random() * 9e9);
+  try {
+    const row = await busy($('#btnEmitir'), () => api.insert('documentos', { data: d }));
+    d.dbid = row.id; STATE.docs.unshift(d);
+  } catch(err){ errMsg('#docMsgs', 'No se pudo guardar el documento: ' + errText(err)); return; }
+  showMsgs(v, 'Documento autorizado (simulado). Número ' + d.numero + '.');
+  openCafe(d);
+  ITEMS = [newItem()]; renderItems(); $('#fNum').value = nextNum(); refreshRef();
+});
+
+/* ---------- CAFE ---------- */
+function openCafe(d){
+  const e=EMISORES.find(x=>x.id===d.emisor);const r=d.receptor;
+  const ref=d.ref?STATE.docs.find(x=>x.id===d.ref):null;
+  const recId=r.tipo==='04'?('Pasaporte/ID: '+esc(r.pas)+' · '+esc(r.pais)):(r.ruc?('RUC '+esc(r.ruc)+(r.dv?' · DV '+esc(r.dv):'')):'—');
+  $('#cafeStatus').textContent=d.estado==='Anulado'?'Documento anulado (simulado)':'Documento autorizado (simulado)';
+  $('#cafeStatus').className='pill '+(d.estado==='Anulado'?'err':'ok');
+  $('#cafe').innerHTML=`
+   <div class="wm"><span>SIN VALOR FISCAL</span></div>
+   <h3>COMPROBANTE AUXILIAR DE FACTURA ELECTRÓNICA</h3>
+   <div class="sub">DOCUMENTO DE PRÁCTICA – SIMULADOR EDUCATIVO ISAE</div>
+   <div class="two">
+     <div class="box"><b>Emisor</b>${esc(e.nombre)}<br>RUC ${esc(e.ruc)} · DV ${esc(e.dv)}<br>${esc(e.dir)} · Tel. ${esc(e.tel)}</div>
+     <div class="box"><b>${esc(TIPODOC[d.tipoDoc])}</b>N.º ${d.numero} · Punto ${d.pto}<br>Fecha: ${d.fecha} ${esc(d.hora||'')}<br>Estado: ${esc(d.estado)}${ref?'<br>Referencia: factura '+ref.numero:''}${d.motivo?'<br>Motivo: '+esc(d.motivo):''}</div>
+   </div>
+   <div class="box" style="font-size:12.5px;margin-bottom:10px"><b>Receptor · ${esc(TIPOREC[r.tipo])}</b>${esc(r.nombre||'Consumidor final')}<br>${recId}${r.dir?'<br>'+esc(r.dir):''}${r.correo?'<br>'+esc(r.correo):''}</div>
+   <table><thead><tr><th>Código</th><th>Descripción</th><th style="text-align:right">Cant.</th><th style="text-align:right">Precio</th><th style="text-align:right">Desc.</th><th style="text-align:right">ITBMS</th><th style="text-align:right">Total</th></tr></thead><tbody>
+   ${d.items.map(it=>{const neto=r2(it.cant*it.precio-it.desc_);const imp=r2(neto*it.tasa/100);return `<tr><td>${esc(it.cod)}</td><td>${esc(it.desc)}</td><td style="text-align:right">${it.cant}</td><td style="text-align:right">${money(it.precio)}</td><td style="text-align:right">${money(it.desc_)}</td><td style="text-align:right">${it.tasa}%</td><td style="text-align:right">${money(neto+imp)}</td></tr>`}).join('')}
+   </tbody></table>
+   <div class="totals" style="max-width:300px;margin:10px 0 0 auto;font-size:12.5px">
+     <div><span>Subtotal</span><span>${money(d.totales.subtotal)}</span></div>
+     <div><span>Descuentos</span><span>-${money(d.totales.descuentos)}</span></div>
+     <div><span>Total ITBMS</span><span>${money(d.totales.itbms)}</span></div>
+     <div class="grand" style="color:#1f3864"><span>Total</span><span>${money(d.totales.total)}</span></div>
+     <div><span>Forma de pago</span><span>${esc(FORMAPAGO[d.pago.forma])}${d.pago.forma==='01'?' · '+esc(d.pago.plazo)+' días':''}</span></div>
+   </div>
+   <div class="foot">
+     <div class="qr" id="qrBox">QR</div>
+     <div><b>CUFE (simulado):</b><div class="cufe">${esc(d.cufe)}</div>
+       <div style="margin-top:6px"><b>Protocolo de autorización (simulado):</b> ${esc(d.protocolo)}</div>
+       <div style="margin-top:6px;color:#555">En una factura real, el código QR permite consultar el documento en la página de la DGI con su CUFE.</div></div>
+   </div>
+   <div class="legal">DOCUMENTO DE PRÁCTICA SIN VALOR FISCAL · Emisor y receptor ficticios · Simulador educativo – Seminario-Taller ISAE Universidad</div>`;
+  const box=$('#qrBox');box.innerHTML='';
+  try{ if(window.QRCode){ new QRCode(box,{text:'SIMULADOR EDUCATIVO ISAE - SIN VALOR FISCAL - '+d.cufe,width:136,height:136,correctLevel:QRCode.CorrectLevel.M}); } else { box.textContent='Código QR (no disponible sin conexión)'; } }catch(e){box.textContent='Código QR'}
+  $('#cafeOverlay').classList.remove('hidden');
+}
+$('#cafeClose').addEventListener('click',()=>$('#cafeOverlay').classList.add('hidden'));
+$('#cafeOverlay').addEventListener('click',e=>{if(e.target.id==='cafeOverlay')$('#cafeOverlay').classList.add('hidden')});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')$('#cafeOverlay').classList.add('hidden')});
+
+/* ======== Documentos emitidos ======== */
+function renderEmitidos(){
+  const docs = STATE.docs; $('#emitEmpty').classList.toggle('hidden', docs.length > 0);
+  $('#emitBody').innerHTML = docs.map(d => `<tr>
+    <td>${d.fecha}</td><td>${esc(TIPODOC[d.tipoDoc])}</td><td>${d.numero}</td>
+    <td>${esc(d.receptor.nombre || 'Consumidor final')}<br><span class="hint">${esc(TIPOREC[d.receptor.tipo])} · ${esc(EMISORES.find(x => x.id === d.emisor).nombre)}</span></td>
+    <td class="num">${money(d.totales.total)}</td>
+    <td><span class="pill ${d.estado === 'Anulado' ? 'err' : 'ok'}">${esc(d.estado)}</span></td>
+    <td class="row" style="gap:6px"><button class="btn small secondary" data-ver="${d.id}">Ver CAFE</button>${d.estado !== 'Anulado' ? `<button class="btn small danger" data-anular="${d.id}">Anular</button>` : ''}</td></tr>`).join('');
+}
+$('#emitBody').addEventListener('click', async e => {
+  const v = e.target.dataset.ver, a = e.target.dataset.anular;
+  if (v) openCafe(STATE.docs.find(x => x.id === v));
+  if (a){
+    const d = STATE.docs.find(x => x.id === a);
+    if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Confirmar anulación?'; return; }
+    const nuevo = { ...d, estado: 'Anulado' }; delete nuevo.dbid;
+    try { await api.update('documentos', { id: d.dbid }, { data: nuevo }); d.estado = 'Anulado'; renderEmitidos(); }
+    catch(err){ e.target.textContent = 'Error: ' + errText(err); }
+  }
+});
+
+/* ---------- casos ---------- */
+function renderCases(){
+  $('#casesBox').innerHTML=CASES.map(c=>{const done=STATE.docs.some(d=>d.estado!=='Anulado'&&c.check(d));
+    return `<div class="case"><div class="row"><h4>${c.titulo}</h4><span class="pill ${done?'ok':'info'} right" id="st-${c.id}">${done?'✓ Resuelto':'Pendiente'}</span></div>
+    <div style="font-size:13.5px">${c.texto}</div><div class="hint">Emisor: ${esc(EMISORES.find(x=>x.id===c.emisor).nombre)}</div>
+    <div class="row" style="margin-top:8px"><button class="btn small" data-check="${c.id}">Comprobar</button><button class="btn small secondary" data-pista="${c.id}">Ver pista</button></div>
+    <div class="msgs" id="cm-${c.id}"></div></div>`}).join('');
+}
+$('#casesBox').addEventListener('click',e=>{
+  const c=CASES.find(x=>x.id===(e.target.dataset.check||e.target.dataset.pista));if(!c)return;
+  const box=$('#cm-'+c.id);
+  if(e.target.dataset.pista){box.innerHTML=`<div class="msg warn">💡 ${esc(c.pista)}</div>`;return}
+  const ok=STATE.docs.some(d=>d.estado!=='Anulado'&&c.check(d));
+  box.innerHTML=ok?'<div class="msg ok">✓ ¡Correcto! Encontré un documento emitido que cumple este caso.</div>':'<div class="msg err">Todavía no hay un documento emitido que cumpla el caso. Revise el emisor, el tipo de documento, el tipo de receptor y los montos.</div>';
+  if(ok){const s=$('#st-'+c.id);s.textContent='✓ Resuelto';s.className='pill ok right'}
+});
+
+const EVAL = [
+  {id:'ev1', pts:20, titulo:'Caso 1 · Factura a una persona natural con descuento', emisor:'E1',
+   texto:'Ferretería La Práctica vende a <b>José Ejemplo</b> (contribuyente persona natural, RUC 8-765-4321, DV 12): 3 galones de pintura a B/.22.00 cada uno, con un descuento de B/.6.00 en esa línea, y 1 brocha a B/.4.00. Todo lleva ITBMS 7 %. Paga con tarjeta de crédito.',
+   check:d=>d.emisor==='E1'&&d.tipoDoc==='01'&&d.receptor.tipo==='01'&&d.receptor.tipoContrib==='1'&&norm(d.receptor.ruc)==='8-765-4321'&&d.receptor.dv==='12'&&near(d.totales.total,68.48)&&d.pago.forma==='03'},
+  {id:'ev2', pts:20, titulo:'Caso 2 · Consumidor final con varias tarifas', emisor:'E4',
+   texto:'Minisúper El Ejercicio vende a un consumidor final: 1 caja de cerveza a B/.18.00, 1 paquete de cigarrillos a B/.6.00 y 2 litros de leche a B/.1.95 cada uno. Aplique la tarifa de ITBMS que corresponde a cada producto. Pago en efectivo.',
+   check:d=>d.emisor==='E4'&&d.tipoDoc==='01'&&d.receptor.tipo==='02'&&near(d.totales.total,30.60)&&near(d.totales.itbms,2.70)},
+  {id:'ev3', pts:20, titulo:'Caso 3 · Servicio exportado', emisor:'E2',
+   texto:'Aula Contable Consultores presta servicios de contabilidad por B/.2,400.00 a <b>Global Tax Advisors LLC</b> de Estados Unidos (identificación EIN-12-3456789). El servicio se usa solo en Estados Unidos. Pago por transferencia.',
+   check:d=>d.emisor==='E2'&&d.tipoDoc==='03'&&d.receptor.tipo==='04'&&near(d.totales.total,2400)&&near(d.totales.itbms,0)&&d.pago.forma==='08'},
+  {id:'ev4', pts:20, titulo:'Caso 4 · Nota de crédito por descuento posterior', emisor:'E1',
+   texto:'Días después, Ferretería La Práctica le concede a José Ejemplo un descuento adicional de B/.10.00 (más su ITBMS) sobre la factura del Caso 1. Emita el documento que corresponde.',
+   check:(d,docs)=>{if(!(d.emisor==='E1'&&d.tipoDoc==='04'&&near(d.totales.total,10.70)))return false;const f=(docs||STATE.docs).find(x=>x.id===d.ref);return !!f&&norm(f.receptor.ruc)==='8-765-4321'}},
+  {id:'ev5', pts:20, titulo:'Caso 5 · Venta al Estado a crédito', emisor:'E3',
+   texto:'Ana Práctica diseña un afiche para el <b>Municipio de Ejemplo</b> (RUC 8-NT-2-54321, DV 45) por B/.350.00 + ITBMS. El municipio paga a crédito, a 45 días.',
+   check:d=>d.emisor==='E3'&&d.tipoDoc==='01'&&d.receptor.tipo==='03'&&norm(d.receptor.ruc)==='8-NT-2-54321'&&d.receptor.dv==='45'&&near(d.totales.total,374.50)&&d.pago.forma==='01'&&String(d.pago.plazo)==='45'}
+];
+function evalResult(docs){ return EVAL.map(c => ({ id: c.id, pts: c.pts, ok: docs.some(d => d.estado !== 'Anulado' && c.check(d, docs)) })); }
+function renderEval(){
+  $('#evalBox').innerHTML = EVAL.map(c => `<div class="case"><div class="row"><h4>${c.titulo}</h4><span class="pill info right">${c.pts} puntos</span></div><div style="font-size:13.5px">${c.texto}</div><div class="hint">Emisor: ${esc(EMISORES.find(x => x.id === c.emisor).nombre)}</div></div>`).join('');
+  const n = NOTAS.find(x => x.evaluacion === EVAL_ID);
+  $('#notaBox').innerHTML = n ? `<div class="msg ok">Nota guardada: <b>${n.nota} / 100</b> · ${fdate(n.actualizado)}</div>` : '';
+}
+$('#btnNota').addEventListener('click', async () => {
+  const r = evalResult(STATE.docs); const nota = r.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);
+  const resumen = r.map((x, i) => `Caso ${i + 1}: ${x.ok ? '✓ correcto' : '✗ no encontrado o con errores'}`).join(' · ');
+  try {
+    const row = await busy($('#btnNota'), () => api.upsert('notas', { evaluacion: EVAL_ID, nota, detalle: r, actualizado: new Date().toISOString() }));
+    NOTAS = NOTAS.filter(x => x.evaluacion !== EVAL_ID).concat([{ ...row, nota, actualizado: row.actualizado || new Date().toISOString() }]);
+    $('#notaBox').innerHTML = `<div class="msg ${nota >= 70 ? 'ok' : 'warn'}"><b>Su nota: ${nota} / 100</b> (guardada)<br>${resumen}</div>` + (nota < 100 ? '<div class="hint">Puede corregir y volver a calcular. Revise emisor, tipo de documento, tipo de receptor, RUC y DV, tarifas de ITBMS, forma de pago y montos.</div>' : '');
+  } catch(err){ errMsg('#notaBox', 'No se pudo guardar la nota: ' + errText(err)); }
+});
+
+/* ======== Tareas (estudiante) ======== */
+function renderTareas(){
+  if (!TAREAS.length){ $('#tareasBox').innerHTML = '<p class="hint">No hay tareas publicadas.</p>'; return; }
+  const hoy = todayISO();
+  $('#tareasBox').innerHTML = TAREAS.slice().sort((a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega))).map(t => {
+    const mias = ENTREGAS.filter(x => x.tarea_id === t.id);
+    const vencida = t.fecha_entrega && t.fecha_entrega < hoy;
+    const estado = mias.some(x => x.calificacion != null) ? '<span class="pill ok right">Calificada</span>' : mias.length ? '<span class="pill ok right">Entregada</span>' : vencida ? '<span class="pill err right">Vencida</span>' : '<span class="pill info right">Pendiente</span>';
+    return `<div class="case">
+      <div class="row"><h4>${esc(t.titulo)}</h4>${estado}</div>
+      <div class="hint">Entrega: ${esc(fday(t.fecha_entrega))} · ${t.puntos || 100} puntos</div>
+      <div class="desc" style="margin-top:6px">${esc(t.descripcion || '')}</div>
+      ${mias.map(x => `<div class="msg ${x.calificacion != null ? 'ok' : 'warn'}" style="margin-top:8px">
+          Entregado: <a href="#" data-dl="${esc(x.archivo)}" data-name="${esc(x.nombre_archivo)}">${esc(x.nombre_archivo || 'archivo')}</a> · ${fdate(x.creado)}
+          ${x.comentario ? '<br>Su comentario: ' + esc(x.comentario) : ''}
+          ${x.calificacion != null ? `<br><b>Calificación: ${x.calificacion} / ${t.puntos || 100}</b>${x.retro ? '<br>Comentario del facilitador: ' + esc(x.retro) : ''}` : `<br><button class="btn small danger" data-borrar="${x.id}" style="margin-top:6px">Borrar esta entrega</button>`}
+        </div>`).join('')}
+      ${IS_TEACHER || mias.length ? '' : `<div class="grid" style="margin-top:10px">
+          <div><label>Archivo</label><input type="file" id="file-${t.id}" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"></div>
+          <div><label>Comentario (opcional)</label><input id="com-${t.id}"></div>
+        </div>
+        <div class="row" style="margin-top:8px"><button class="btn small" data-entregar="${t.id}">Entregar</button></div>`}
+      <div class="msgs" id="tm-${t.id}"></div>
+    </div>`;
+  }).join('');
+}
+$('#tareasBox').addEventListener('click', async e => {
+  const dl = e.target.dataset.dl;
+  if (dl){ e.preventDefault(); try { window.open(await api.fileUrl('entregas', dl, e.target.dataset.name), '_blank', 'noopener'); } catch(err){ alert(errText(err)); } return; }
+  const tid = e.target.dataset.entregar;
+  if (tid){
+    const f = $('#file-' + tid).files[0];
+    if (!f) return errMsg('#tm-' + tid, 'Elija el archivo que va a entregar.');
+    if (f.size > 10 * 1024 * 1024) return errMsg('#tm-' + tid, 'El archivo pasa de 10 MB. Comprímalo o guárdelo en PDF.');
+    const limpio = f.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.\-]+/g, '_');
+    const path = `${ME.id}/${tid}/${Date.now()}-${limpio}`;
+    try {
+      await busy(e.target, async () => {
+        await api.upload('entregas', path, f);
+        const row = await api.insert('entregas', { tarea_id: tid, archivo: path, nombre_archivo: f.name, comentario: $('#com-' + tid).value.trim() || null });
+        ENTREGAS.unshift(row);
+      });
+      renderTareas(); okMsg('#tm-' + tid, 'Tarea entregada.');
+    } catch(err){ errMsg('#tm-' + tid, 'No se pudo entregar: ' + errText(err)); }
+    return;
+  }
+  const bid = e.target.dataset.borrar;
+  if (bid){
+    if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Seguro? Pulse otra vez'; return; }
+    const x = ENTREGAS.find(y => y.id === bid);
+    try { await api.remove('entregas', { id: bid }); await api.removeFile('entregas', x.archivo).catch(() => {}); ENTREGAS = ENTREGAS.filter(y => y.id !== bid); renderTareas(); }
+    catch(err){ alert(errText(err)); }
+  }
+});
+
+/* ======== Materiales ======== */
+function matLink(m){
+  if (m.archivo) return `<a href="#" data-mat="${esc(m.archivo)}">${esc(m.titulo)}</a>`;
+  if (m.url && /^https?:\/\//i.test(m.url)) return `<a href="${esc(m.url)}" target="_blank" rel="noopener">${esc(m.titulo)}</a>`;
+  return esc(m.titulo);
+}
+function renderMateriales(){
+  $('#matBox').innerHTML = MATERIALES.length ? '<ul class="tight">' + MATERIALES.map(m => `<li>${matLink(m)} <span class="hint">· ${fdate(m.creado)}</span></li>`).join('') + '</ul>' : '<p class="hint">Todavía no hay materiales.</p>';
+}
+document.addEventListener('click', async e => {
+  const p = e.target.dataset && e.target.dataset.mat; if (!p) return;
+  e.preventDefault(); try { window.open(await api.fileUrl('materiales', p), '_blank', 'noopener'); } catch(err){ alert(errText(err)); }
+});
+
+/* ======== Panel del facilitador ======== */
+let DC_TAB = 'progreso', DC = null;
+$('#dcNav').addEventListener('click', e => { if (e.target.dataset.dc) dcShow(e.target.dataset.dc); });
+async function dcLoad(){
+  const [acceso, perfiles, docs, notas, tareas, entregas, anuncios, materiales] = await Promise.all(
+    ['acceso', 'perfiles', 'documentos', 'notas', 'tareas', 'entregas', 'anuncios', 'materiales'].map(t => api.list(t, t === 'notas' ? 'actualizado' : 'creado')));
+  TAREAS = tareas; ANUNCIOS = anuncios; MATERIALES = materiales;
+  const porUsuario = {};
+  docs.forEach(r => { (porUsuario[r.user_id] = porUsuario[r.user_id] || []).push(r.data); });
+  DC = { acceso, perfiles, porUsuario, notas, tareas, entregas, anuncios, materiales };
+}
+async function dcShow(k){
+  if (!IS_TEACHER) return;
+  DC_TAB = k;
+  $$('#dcNav button').forEach(b => b.classList.toggle('active', b.dataset.dc === k));
+  $$('[data-dcv]').forEach(v => v.classList.toggle('hidden', v.dataset.dcv !== k));
+  try { if (!DC) await dcLoad(); } catch(err){ $('#pgBody').innerHTML = `<tr><td>${esc(errText(err))}</td></tr>`; return; }
+  ({ progreso: dcProgreso, entregas: dcEntregas, publicar: dcPublicar, acceso: dcAcceso })[k]();
+}
+$('#btnRefresh').addEventListener('click', async e => { await busy(e.target, dcLoad); dcProgreso(); });
+
+function filas(){
+  const est = DC.acceso.filter(a => a.rol !== 'docente').sort((a, b) => (a.nombre || a.email).localeCompare(b.nombre || b.email));
+  return est.map(a => {
+    const p = DC.perfiles.find(x => x.email === a.email);
+    const docs = p ? (DC.porUsuario[p.id] || []) : [];
+    const casos = CASES.filter(c => docs.some(d => d.estado !== 'Anulado' && c.check(d))).length;
+    const ev = evalResult(docs); const notaCalc = ev.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);
+    const guardada = p && DC.notas.find(n => n.user_id === p.id && n.evaluacion === EVAL_ID);
+    const tareas = DC.tareas.map(t => { const en = p ? DC.entregas.filter(x => x.user_id === p.id && x.tarea_id === t.id) : []; const c = en.find(x => x.calificacion != null); return c ? c.calificacion : (en.length ? 'entregada' : ''); });
+    return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas };
+  });
+}
+function dcProgreso(){
+  const tareas = DC.tareas.slice().sort((a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega)));
+  DC.tareas = tareas;
+  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Práctica</th><th class="num">Evaluación</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
+  const rows = filas();
+  $('#pgBody').innerHTML = rows.map(r => `<tr>
+    <td>${esc(r.a.nombre || '')}<br><span class="hint">${esc(r.a.email)}</span></td>
+    <td>${r.p ? '<span class="pill ok">Creada</span>' : '<span class="pill err">Sin crear</span>'}</td>
+    <td class="num">${r.docs}</td>
+    <td class="num">${r.casos} / ${CASES.length}</td>
+    <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">no la ha guardado</span>'}</td>
+    ${r.tareas.map(v => `<td class="num">${v === '' ? '—' : esc(v)}</td>`).join('')}
+  </tr>`).join('') || '<tr><td colspan="5" class="hint">No hay estudiantes autorizados.</td></tr>';
+}
+$('#btnCsv').addEventListener('click', () => {
+  if (!DC) return;
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica', 'Evaluación FE (100)'].concat(DC.tareas.map(t => t.titulo));
+  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos + '/' + CASES.length, r.notaCalc].concat(r.tareas).map(q).join(';')));
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Notas seminario fiscal ISAE ' + todayISO() + '.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+function nombreDe(uid){ const p = DC.perfiles.find(x => x.id === uid); if (!p) return 'Usuario'; const a = DC.acceso.find(x => x.email === p.email); return (a && a.nombre) || p.nombre || p.email; }
+function dcEntregas(){
+  const sel = $('#dcTarea'); const prev = sel.value;
+  sel.innerHTML = DC.tareas.map(t => `<option value="${t.id}">${esc(t.titulo)}</option>`).join('');
+  if (prev && DC.tareas.some(t => t.id === prev)) sel.value = prev;
+  const t = DC.tareas.find(x => x.id === sel.value);
+  if (!t){ $('#enBody').innerHTML = '<tr><td colspan="6" class="hint">No hay tareas publicadas.</td></tr>'; $('#enFalta').textContent = ''; return; }
+  const en = DC.entregas.filter(x => x.tarea_id === t.id);
+  $('#enBody').innerHTML = en.map(x => `<tr>
+    <td>${esc(nombreDe(x.user_id))}</td>
+    <td>${fdate(x.creado)}${t.fecha_entrega && x.creado.slice(0, 10) > t.fecha_entrega ? '<br><span class="pill err">Tarde</span>' : ''}</td>
+    <td><a href="#" data-dcdl="${esc(x.archivo)}" data-name="${esc(x.nombre_archivo)}">${esc(x.nombre_archivo || 'archivo')}</a>${x.comentario ? '<br><span class="hint">' + esc(x.comentario) + '</span>' : ''}</td>
+    <td><input class="mini" type="number" min="0" max="${t.puntos || 100}" step="0.5" id="cal-${x.id}" value="${x.calificacion ?? ''}"> <span class="hint">/ ${t.puntos || 100}</span></td>
+    <td><textarea class="mini" rows="2" id="ret-${x.id}">${esc(x.retro || '')}</textarea></td>
+    <td><button class="btn small" data-calificar="${x.id}">Guardar</button></td></tr>`).join('') || '<tr><td colspan="6" class="hint">Nadie ha entregado todavía.</td></tr>';
+  const entregaron = new Set(en.map(x => x.user_id));
+  const faltan = DC.acceso.filter(a => a.rol !== 'docente').filter(a => { const p = DC.perfiles.find(x => x.email === a.email); return !p || !entregaron.has(p.id); }).map(a => a.nombre || a.email);
+  $('#enFalta').textContent = faltan.length ? 'Faltan por entregar: ' + faltan.join(', ') + '.' : 'Todos entregaron.';
+}
+$('#dcTarea').addEventListener('change', dcEntregas);
+$('#enBody').addEventListener('click', async e => {
+  const dl = e.target.dataset.dcdl;
+  if (dl){ e.preventDefault(); try { window.open(await api.fileUrl('entregas', dl, e.target.dataset.name), '_blank', 'noopener'); } catch(err){ alert(errText(err)); } return; }
+  const id = e.target.dataset.calificar; if (!id) return;
+  const v = $('#cal-' + id).value.trim();
+  const patch = { calificacion: v === '' ? null : Number(v), retro: $('#ret-' + id).value.trim() || null };
+  try { await busy(e.target, () => api.update('entregas', { id }, patch)); Object.assign(DC.entregas.find(x => x.id === id), patch); e.target.textContent = 'Guardado ✓'; }
+  catch(err){ alert(errText(err)); }
+});
+
+function dcPublicar(){
+  const del = (t, id) => `<button class="btn small danger" data-del-t="${t}" data-del-id="${id}">Borrar</button>`;
+  $('#anList').innerHTML = DC.anuncios.map(a => `<div class="row case"><div><b>${esc(a.titulo)}</b><br><span class="hint">${fdate(a.creado)}</span></div><span class="right">${del('anuncios', a.id)}</span></div>`).join('') || '<p class="hint">Ninguno.</p>';
+  $('#taList').innerHTML = DC.tareas.map(t => `<div class="row case"><div><b>${esc(t.titulo)}</b><br><span class="hint">Entrega: ${esc(fday(t.fecha_entrega))} · ${t.puntos} puntos</span></div><span class="right">${del('tareas', t.id)}</span></div>`).join('') || '<p class="hint">Ninguna.</p>';
+  $('#maList').innerHTML = DC.materiales.map(m => `<div class="row case"><div>${matLink(m)}<br><span class="hint">${fdate(m.creado)}</span></div><span class="right">${del('materiales', m.id)}</span></div>`).join('') || '<p class="hint">Ninguno.</p>';
+}
+$('#btnAn').addEventListener('click', async e => {
+  const titulo = $('#anTit').value.trim(); if (!titulo) return errMsg('#anMsg', 'Escriba el título.');
+  try { await busy(e.target, () => api.insert('anuncios', { titulo, cuerpo: $('#anBody').value.trim() })); $('#anTit').value = $('#anBody').value = ''; await dcLoad(); dcPublicar(); okMsg('#anMsg', 'Anuncio publicado.'); }
+  catch(err){ errMsg('#anMsg', err); }
+});
+$('#btnTa').addEventListener('click', async e => {
+  const titulo = $('#taTit').value.trim(); if (!titulo) return errMsg('#taMsg', 'Escriba el título.');
+  try { await busy(e.target, () => api.insert('tareas', { titulo, descripcion: $('#taDesc').value.trim(), fecha_entrega: $('#taFecha').value || null, puntos: parseInt($('#taPts').value) || 100 })); $('#taTit').value = $('#taDesc').value = ''; await dcLoad(); dcPublicar(); okMsg('#taMsg', 'Tarea publicada.'); }
+  catch(err){ errMsg('#taMsg', err); }
+});
+$('#btnMa').addEventListener('click', async e => {
+  const titulo = $('#maTit').value.trim(); const url = $('#maUrl').value.trim(); const f = $('#maFile').files[0];
+  if (!titulo) return errMsg('#maMsg', 'Escriba el título.');
+  if (!url && !f) return errMsg('#maMsg', 'Ponga un enlace o elija un archivo.');
+  if (url && !/^https?:\/\//i.test(url)) return errMsg('#maMsg', 'El enlace debe empezar con https://');
+  if (f && f.size > 20 * 1024 * 1024) return errMsg('#maMsg', 'El archivo pasa de 20 MB.');
+  try {
+    await busy(e.target, async () => {
+      let archivo = null;
+      if (f){ archivo = Date.now() + '-' + f.name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^\w.\-]+/g, '_'); await api.upload('materiales', archivo, f); }
+      await api.insert('materiales', { titulo, url: url || null, archivo });
+    });
+    $('#maTit').value = $('#maUrl').value = ''; $('#maFile').value = ''; await dcLoad(); dcPublicar(); okMsg('#maMsg', 'Material publicado.');
+  } catch(err){ errMsg('#maMsg', err); }
+});
+$('[data-dcv="publicar"]').addEventListener('click', async e => {
+  const t = e.target.dataset.delT, id = e.target.dataset.delId; if (!t) return;
+  if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Seguro?'; return; }
+  try {
+    if (t === 'materiales'){ const m = DC.materiales.find(x => x.id === id); if (m && m.archivo) await api.removeFile('materiales', m.archivo).catch(() => {}); }
+    await api.remove(t, { id }); await dcLoad(); dcPublicar();
+  } catch(err){ alert(errText(err)); }
+});
+
+function dcAcceso(){
+  $('#acBody').innerHTML = DC.acceso.slice().sort((a, b) => (a.rol + (a.nombre || a.email)).localeCompare(b.rol + (b.nombre || b.email))).map(a => {
+    const p = DC.perfiles.find(x => x.email === a.email);
+    return `<tr><td>${esc(a.email)}</td><td>${esc(a.nombre || '')}</td><td>${a.rol === 'docente' ? 'Facilitador' : 'Estudiante'}</td><td>${p ? '<span class="pill ok">Creada</span>' : '<span class="pill info">Pendiente</span>'}</td>
+      <td>${a.email === ME.email ? '' : `<button class="btn small danger" data-quitar="${esc(a.email)}">Quitar</button>`}</td></tr>`;
+  }).join('');
+}
+$('#btnAc').addEventListener('click', async e => {
+  const lineas = $('#acNew').value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const nuevos = [], malos = [];
+  lineas.forEach(l => { const [em, ...rest] = l.split(/[;,\t]/); const email = (em || '').trim().toLowerCase(); if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) nuevos.push({ email, nombre: rest.join(' ').trim() || null, rol: 'estudiante' }); else malos.push(l); });
+  if (!nuevos.length) return errMsg('#acMsg', 'Escriba al menos un correo válido.');
+  const ya = []; let ok = 0;
+  await busy(e.target, async () => { for (const n of nuevos){ if (DC.acceso.some(a => a.email === n.email)){ ya.push(n.email); continue; } try { await api.insert('acceso', n); ok++; } catch(err){ malos.push(n.email + ' (' + errText(err) + ')'); } } await dcLoad(); });
+  dcAcceso(); $('#acNew').value = malos.join('\n');
+  $('#acMsg').innerHTML = `<div class="msg ok">✓ ${ok} autorizado(s).</div>` + (ya.length ? `<div class="msg warn">Ya estaban: ${esc(ya.join(', '))}</div>` : '') + (malos.length ? `<div class="msg err">Revise: ${esc(malos.join(' · '))}</div>` : '');
+});
+$('#acBody').addEventListener('click', async e => {
+  const em = e.target.dataset.quitar; if (!em) return;
+  if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Seguro?'; return; }
+  try { await api.remove('acceso', { email: em }); await dcLoad(); dcAcceso(); } catch(err){ alert(errText(err)); }
+});
+
+/* ======== Arranque ======== */
+(async () => { try { await start(); } catch(err){ errMsg('#authMsg', err); } })();
+</script>
+</body>
+</html>

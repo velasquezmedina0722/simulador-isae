@@ -125,6 +125,10 @@ td input.mini{width:80px;padding:5px 7px}
 td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
 .mockbar{background:#8a5a00;color:#fff;text-align:center;font-size:12.5px;padding:5px 12px}
 .desc{white-space:pre-line;font-size:13.5px}
+.ebox{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.ebox b{color:var(--brand)}
+.tf textarea{font-size:13.5px}
+.ficha{background:var(--card);color:var(--ink);max-width:980px;width:100%;border-radius:8px;padding:20px}
 </style>
 </head>
 <body>
@@ -321,7 +325,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
     <div data-view="casos" class="hidden">
       <div class="card">
         <h2>Casos de práctica</h2>
-        <p style="margin-top:0;font-size:13.5px">Emita el documento que pide cada caso con el emisor indicado. Luego pulse <b>Comprobar</b>: el simulador busca entre sus documentos emitidos uno que cumpla el caso. Estos casos no cuentan para la nota.</p>
+        <p style="margin-top:0;font-size:13.5px">Emita el documento que pide cada caso con el emisor indicado. Luego pulse <b>Comprobar</b>: el simulador busca entre sus documentos emitidos uno que cumpla el caso. Estos casos también se evalúan: cada uno vale 20 puntos (100 en total).</p>
         <div id="casesBox"></div>
       </div>
     </div>
@@ -429,6 +433,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
             <div><label for="taTit">Título</label><input id="taTit"></div>
             <div><label for="taFecha">Fecha de entrega</label><input id="taFecha" type="date"></div>
             <div><label for="taPts">Puntos</label><input id="taPts" type="number" value="100" min="1"></div>
+            <div><label for="taFmt">Cómo se entrega</label><select id="taFmt"><option value="archivo">Subiendo un archivo</option><option value="taller1">Llenando el mapa de obligaciones en la app</option></select></div>
           </div>
           <div class="field" style="margin-top:10px"><label for="taDesc">Instrucciones</label><textarea id="taDesc" rows="5"></textarea></div>
           <button class="btn" id="btnTa">Publicar tarea</button>
@@ -466,6 +471,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
   <div class="row" style="margin-bottom:8px"><span class="pill ok" id="cafeStatus">Documento autorizado (simulado)</span><button class="btn small right" id="cafeClose">Cerrar</button></div>
   <div class="cafe" id="cafe"></div>
 </div></div>
+<div class="overlay hidden" id="fichaOverlay"><div class="ficha"><div class="row" style="margin-bottom:8px"><h2 id="fichaTit" style="margin:0;color:var(--brand);font-size:16px"></h2><button class="btn small right" id="fichaClose">Cerrar</button></div><div id="fichaBody"></div></div></div>
 
 <script>
 /* ======== Configuración (la llena el facilitador al publicar) ======== */
@@ -578,7 +584,7 @@ function mockApi(){
       { email:'ovelasquez2014@gmail.com', nombre:'Lic. Osmar Velásquez', rol:'docente', creado:now() },
       { email:'estudiante@prueba.com', nombre:'Estudiante de Prueba', rol:'estudiante', creado:now() }
     ]);
-    put('tareas', [{ id:uid(), titulo:'Taller 1 · Mapa de obligaciones de una empresa', descripcion:'Tarea de ejemplo del modo de prueba.', fecha_entrega:'2026-11-19', puntos:100, creado:now() }]);
+    put('tareas', [{ id:uid(), titulo:'Evaluación 1 · Mapa de obligaciones de una empresa', formato:'taller1', descripcion:'Tarea de ejemplo del modo de prueba.', fecha_entrega:'2026-11-19', puntos:100, creado:now() }]);
     put('anuncios', [{ id:uid(), titulo:'Bienvenidos', cuerpo:'Anuncio de ejemplo del modo de prueba.', creado:now() }]);
     put('seed', true);
   }
@@ -630,7 +636,7 @@ function mockApi(){
       if (i >= 0) rows[i] = r; else rows.push(r); put(t, rows); return r;
     },
     async update(t, m, patch){
-      if (t === 'entregas' && !docente()) deny();
+      if (t === 'entregas' && !docente() && get(t, []).some(r => match(r, m) && (r.user_id !== me.id || r.calificacion != null))) deny();
       const rows = get(t, []); const out = [];
       rows.forEach(r => { if (match(r, m) && (docente() || !OWN[t] || r[OWN[t]] === me.id)) { Object.assign(r, patch); out.push(r); } });
       put(t, rows); return out;
@@ -759,7 +765,7 @@ document.addEventListener('click', e => { const g = e.target.closest('[data-goto
 function renderInicio(){
   const casos = CASES.filter(c => STATE.docs.some(d => d.estado !== 'Anulado' && c.check(d))).length;
   const nota = NOTAS.find(n => n.evaluacion === EVAL_ID);
-  const entregadas = TAREAS.filter(t => ENTREGAS.some(x => x.tarea_id === t.id)).length;
+  const entregadas = TAREAS.filter(t => ENTREGAS.some(x => x.tarea_id === t.id && x.estado !== 'borrador')).length;
   $('#miAvance').innerHTML = IS_TEACHER ? '<div class="hint">Use el <b>Panel del facilitador</b> para ver el avance del grupo.</div>' :
     `<div class="stat"><b>${STATE.docs.length}</b><span>documentos emitidos</span></div>
      <div class="stat"><b>${casos} / ${CASES.length}</b><span>casos de práctica resueltos</span></div>
@@ -1054,17 +1060,112 @@ $('#btnNota').addEventListener('click', async () => {
 });
 
 /* ======== Tareas (estudiante) ======== */
+const OBLIG_BASE = [
+  'Impuesto sobre la Renta (ISR)',
+  'ITBMS',
+  'Planilla de la CSS (cuotas obrero-patronales)',
+  'Aviso de Operación',
+  'Tasa Única',
+  'Factura electrónica'
+];
+const FRECUENCIAS = ['', 'Mensual', 'Trimestral', 'Anual', 'Una sola vez', 'En cada venta', 'Otra'];
+const entregada = x => x.estado !== 'borrador';
+function tallerVacio(){ return { empresa: { nombre: '', actividad: '', tipo: '' }, filas: OBLIG_BASE.map(o => ({ oblig: o, que: '', form: '', frec: '', fecha: '' })), reforma: { nombre: '', cambio: '', afecta: '' } }; }
+
+/* Ficha de solo lectura (estudiante calificado y panel del facilitador) */
+function fichaTaller1(r){
+  r = r || tallerVacio(); const e = r.empresa || {}, f = r.reforma || {};
+  return `<div class="ebox" style="font-size:13.5px;margin-bottom:10px"><b>Empresa</b> ${esc(e.nombre || '—')} · ${esc(e.tipo || 'tipo no indicado')}<br><span class="hint">${esc(e.actividad || '')}</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Obligación</th><th>Qué se presenta o paga</th><th>Formulario</th><th>Cada cuánto</th><th>Fecha límite</th></tr></thead><tbody>
+    ${(r.filas || []).map(x => `<tr><td><b>${esc(x.oblig)}</b></td><td>${esc(x.que)}</td><td>${esc(x.form)}</td><td>${esc(x.frec)}</td><td>${esc(x.fecha)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <h3>Reforma: ${esc(f.nombre || '—')}</h3>
+    <p class="desc"><b>Qué cambió:</b> ${esc(f.cambio || '—')}</p>
+    <p class="desc"><b>A quién afecta:</b> ${esc(f.afecta || '—')}</p>`;
+}
+
+/* Formulario editable */
+function formTaller1(t, r){
+  r = r || tallerVacio(); const e = r.empresa || {}, f = r.reforma || {}; const id = t.id;
+  const inp = (k, v, ph, extra = '') => `<input data-tf="${k}" value="${esc(v)}" placeholder="${esc(ph)}" ${extra}>`;
+  return `<div class="tf" id="tf-${id}">
+    <h3>1. La empresa</h3>
+    <div class="grid">
+      <div><label>Nombre de la empresa</label>${inp('empresa.nombre', e.nombre, 'Real con datos protegidos o inventada')}</div>
+      <div><label>Tipo de contribuyente</label><select data-tf="empresa.tipo">${['', 'Persona jurídica', 'Persona natural'].map(o => `<option ${o === e.tipo ? 'selected' : ''} value="${o}">${o || '— Seleccione —'}</option>`).join('')}</select></div>
+    </div>
+    <div class="field" style="margin-top:10px"><label>¿A qué se dedica?</label><textarea data-tf="empresa.actividad" rows="2">${esc(e.actividad)}</textarea></div>
+    <h3>2. Obligaciones</h3>
+    <p class="hint" style="margin-top:0">Complete cada fila. Si la empresa tiene otra obligación, agréguela.</p>
+    <div class="tablewrap"><table class="items"><thead><tr><th style="width:20%">Obligación</th><th>Qué se presenta o paga</th><th style="width:15%">Formulario</th><th style="width:14%">Cada cuánto</th><th style="width:16%">Fecha límite</th><th style="width:4%"></th></tr></thead>
+      <tbody data-filas="${id}">${(r.filas || []).map((x, i) => filaTaller(x, i)).join('')}</tbody></table></div>
+    <div class="row" style="margin-top:8px"><button class="btn small secondary" type="button" data-addfila="${id}">+ Agregar otra obligación</button></div>
+    <h3>3. Una reforma de los últimos cinco años</h3>
+    <div class="field"><label>¿Qué reforma eligió? (ley, decreto o resolución)</label>${inp('reforma.nombre', f.nombre, 'Ej.: Ley 473 de 2025')}</div>
+    <div class="field"><label>¿Qué cambió?</label><textarea data-tf="reforma.cambio" rows="4">${esc(f.cambio)}</textarea></div>
+    <div class="field"><label>¿A quién afecta?</label><textarea data-tf="reforma.afecta" rows="3">${esc(f.afecta)}</textarea></div>
+  </div>`;
+}
+function filaTaller(x, i){
+  const base = i < OBLIG_BASE.length && x.oblig === OBLIG_BASE[i];
+  return `<tr>
+    <td>${base ? `<b>${esc(x.oblig)}</b><input type="hidden" data-col="oblig" value="${esc(x.oblig)}">` : `<input data-col="oblig" value="${esc(x.oblig)}" placeholder="Otra obligación">`}</td>
+    <td><textarea data-col="que" rows="2" style="min-width:160px">${esc(x.que)}</textarea></td>
+    <td><input data-col="form" value="${esc(x.form)}" placeholder="Ej.: 430" style="min-width:90px"></td>
+    <td><select data-col="frec" style="min-width:110px">${FRECUENCIAS.map(o => `<option ${o === x.frec ? 'selected' : ''} value="${o}">${o || '—'}</option>`).join('')}</select></td>
+    <td><input data-col="fecha" value="${esc(x.fecha)}" placeholder="Ej.: día 15" style="min-width:110px"></td>
+    <td>${base ? '' : '<button type="button" class="btn small danger" data-delfila="1" aria-label="Quitar fila">×</button>'}</td></tr>`;
+}
+function leerTaller1(id){
+  const box = $('#tf-' + id); const r = tallerVacio();
+  box.querySelectorAll('[data-tf]').forEach(el => { const [a, b] = el.dataset.tf.split('.'); r[a][b] = el.value.trim(); });
+  r.filas = [...box.querySelectorAll(`[data-filas="${id}"] tr`)].map(tr => {
+    const g = c => (tr.querySelector(`[data-col="${c}"]`) || {}).value || '';
+    return { oblig: g('oblig').trim(), que: g('que').trim(), form: g('form').trim(), frec: g('frec'), fecha: g('fecha').trim() };
+  }).filter((x, i) => i < OBLIG_BASE.length || x.oblig || x.que);
+  return r;
+}
+function faltantes(r){
+  const F = [];
+  if (!r.empresa.nombre) F.push('el nombre de la empresa');
+  if (!r.empresa.tipo) F.push('el tipo de contribuyente');
+  if (!r.empresa.actividad) F.push('a qué se dedica la empresa');
+  r.filas.forEach(x => { if (!x.que || !x.frec || !x.fecha) F.push('los datos de «' + (x.oblig || 'una obligación') + '»'); });
+  if (!r.reforma.nombre || !r.reforma.cambio || !r.reforma.afecta) F.push('la reforma (qué reforma, qué cambió y a quién afecta)');
+  return F;
+}
+
 function renderTareas(){
   if (!TAREAS.length){ $('#tareasBox').innerHTML = '<p class="hint">No hay tareas publicadas.</p>'; return; }
   const hoy = todayISO();
   $('#tareasBox').innerHTML = TAREAS.slice().sort((a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega))).map(t => {
     const mias = ENTREGAS.filter(x => x.tarea_id === t.id);
     const vencida = t.fecha_entrega && t.fecha_entrega < hoy;
-    const estado = mias.some(x => x.calificacion != null) ? '<span class="pill ok right">Calificada</span>' : mias.length ? '<span class="pill ok right">Entregada</span>' : vencida ? '<span class="pill err right">Vencida</span>' : '<span class="pill info right">Pendiente</span>';
-    return `<div class="case">
-      <div class="row"><h4>${esc(t.titulo)}</h4>${estado}</div>
+    const calif = mias.find(x => x.calificacion != null);
+    const ent = mias.filter(entregada);
+    const borr = mias.find(x => x.estado === 'borrador');
+    const estado = calif ? '<span class="pill ok right">Calificada</span>' : ent.length ? '<span class="pill ok right">Entregada</span>' : borr ? '<span class="pill info right">Borrador guardado</span>' : vencida ? '<span class="pill err right">Vencida</span>' : '<span class="pill info right">Pendiente</span>';
+    const head = `<div class="row"><h4>${esc(t.titulo)}</h4>${estado}</div>
       <div class="hint">Entrega: ${esc(fday(t.fecha_entrega))} · ${t.puntos || 100} puntos</div>
-      <div class="desc" style="margin-top:6px">${esc(t.descripcion || '')}</div>
+      <div class="desc" style="margin-top:6px">${esc(t.descripcion || '')}</div>`;
+    const nota = calif ? `<div class="msg ok" style="margin-top:8px"><b>Calificación: ${calif.calificacion} / ${t.puntos || 100}</b>${calif.retro ? '<br>Comentario del facilitador: ' + esc(calif.retro) : ''}</div>` : '';
+
+    if (t.formato === 'taller1'){
+      const mia = calif || ent[0] || borr;
+      if (IS_TEACHER) return `<div class="case">${head}<p class="hint">Los estudiantes llenan este taller aquí mismo. Véalo y califíquelo en <b>Panel del facilitador → Entregas</b>.</p></div>`;
+      if (calif) return `<div class="case">${head}${nota}<h3>Lo que entregó</h3>${fichaTaller1(calif.respuesta)}</div>`;
+      const yaEnt = mia && entregada(mia);
+      return `<div class="case">${head}
+        ${yaEnt ? `<div class="msg ok" style="margin-top:8px">Entregado el ${fdate(mia.actualizado || mia.creado)}. Puede corregirlo y volver a pulsar «Actualizar entrega» mientras no esté calificado.</div>` : mia ? `<div class="msg warn" style="margin-top:8px">Borrador guardado el ${fdate(mia.actualizado || mia.creado)}. Todavía no lo ha entregado.</div>` : ''}
+        ${formTaller1(t, mia && mia.respuesta)}
+        <div class="row" style="margin-top:12px">
+          <button class="btn secondary" data-tguardar="${t.id}">Guardar borrador</button>
+          <button class="btn" data-tentregar="${t.id}">${yaEnt ? 'Actualizar entrega' : 'Entregar'}</button>
+        </div>
+        <div class="msgs" id="tm-${t.id}"></div></div>`;
+    }
+
+    return `<div class="case">${head}
       ${mias.map(x => `<div class="msg ${x.calificacion != null ? 'ok' : 'warn'}" style="margin-top:8px">
           Entregado: <a href="#" data-dl="${esc(x.archivo)}" data-name="${esc(x.nombre_archivo)}">${esc(x.nombre_archivo || 'archivo')}</a> · ${fdate(x.creado)}
           ${x.comentario ? '<br>Su comentario: ' + esc(x.comentario) : ''}
@@ -1079,7 +1180,28 @@ function renderTareas(){
     </div>`;
   }).join('');
 }
+
+async function guardarTaller(tid, btn, final){
+  const r = leerTaller1(tid);
+  if (final){ const F = faltantes(r); if (F.length) return errMsg('#tm-' + tid, 'Antes de entregar complete: ' + F.join('; ') + '. Si aún no termina, use «Guardar borrador».'); }
+  const previa = ENTREGAS.find(x => x.tarea_id === tid && x.calificacion == null);
+  const fila = { respuesta: r, estado: final ? 'entregada' : (previa && entregada(previa) ? 'entregada' : 'borrador'), actualizado: new Date().toISOString() };
+  try {
+    await busy(btn, async () => {
+      if (previa){ const out = await api.update('entregas', { id: previa.id }, fila); Object.assign(previa, (out && out[0]) || fila); }
+      else { const row = await api.insert('entregas', { tarea_id: tid, ...fila }); ENTREGAS.unshift(row); }
+    });
+    renderTareas();
+    okMsg('#tm-' + tid, final ? 'Taller entregado. El facilitador ya puede verlo.' : 'Borrador guardado. Puede seguir otro día.');
+  } catch(err){ errMsg('#tm-' + tid, 'No se pudo guardar: ' + errText(err)); }
+}
+
 $('#tareasBox').addEventListener('click', async e => {
+  const add = e.target.dataset.addfila;
+  if (add){ const tb = $(`[data-filas="${add}"]`); tb.insertAdjacentHTML('beforeend', filaTaller({ oblig: '', que: '', form: '', frec: '', fecha: '' }, 99)); return; }
+  if (e.target.dataset.delfila){ e.target.closest('tr').remove(); return; }
+  if (e.target.dataset.tguardar) return guardarTaller(e.target.dataset.tguardar, e.target, false);
+  if (e.target.dataset.tentregar) return guardarTaller(e.target.dataset.tentregar, e.target, true);
   const dl = e.target.dataset.dl;
   if (dl){ e.preventDefault(); try { window.open(await api.fileUrl('entregas', dl, e.target.dataset.name), '_blank', 'noopener'); } catch(err){ alert(errText(err)); } return; }
   const tid = e.target.dataset.entregar;
@@ -1103,7 +1225,7 @@ $('#tareasBox').addEventListener('click', async e => {
   if (bid){
     if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Seguro? Pulse otra vez'; return; }
     const x = ENTREGAS.find(y => y.id === bid);
-    try { await api.remove('entregas', { id: bid }); await api.removeFile('entregas', x.archivo).catch(() => {}); ENTREGAS = ENTREGAS.filter(y => y.id !== bid); renderTareas(); }
+    try { await api.remove('entregas', { id: bid }); if (x.archivo) await api.removeFile('entregas', x.archivo).catch(() => {}); ENTREGAS = ENTREGAS.filter(y => y.id !== bid); renderTareas(); }
     catch(err){ alert(errText(err)); }
   }
 });
@@ -1160,20 +1282,20 @@ function filas(){
     const casos = CASES.filter(c => docs.some(d => d.estado !== 'Anulado' && c.check(d))).length;
     const ev = evalResult(docs); const notaCalc = ev.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);
     const guardada = p && DC.notas.find(n => n.user_id === p.id && n.evaluacion === EVAL_ID);
-    const tareas = DC.tareas.map(t => { const en = p ? DC.entregas.filter(x => x.user_id === p.id && x.tarea_id === t.id) : []; const c = en.find(x => x.calificacion != null); return c ? c.calificacion : (en.length ? 'entregada' : ''); });
+    const tareas = DC.tareas.map(t => { const en = p ? DC.entregas.filter(x => x.user_id === p.id && x.tarea_id === t.id && x.estado !== 'borrador') : []; const c = en.find(x => x.calificacion != null); return c ? c.calificacion : (en.length ? 'entregada' : ''); });
     return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas };
   });
 }
 function dcProgreso(){
   const tareas = DC.tareas.slice().sort((a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega)));
   DC.tareas = tareas;
-  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Práctica</th><th class="num">Evaluación</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
+  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Casos de práctica</th><th class="num">Evaluación simulador</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
   const rows = filas();
   $('#pgBody').innerHTML = rows.map(r => `<tr>
     <td>${esc(r.a.nombre || '')}<br><span class="hint">${esc(r.a.email)}</span></td>
     <td>${r.p ? '<span class="pill ok">Creada</span>' : '<span class="pill err">Sin crear</span>'}</td>
     <td class="num">${r.docs}</td>
-    <td class="num">${r.casos} / ${CASES.length}</td>
+    <td class="num"><b>${r.casos * 20}</b><br><span class="hint">${r.casos} de ${CASES.length} casos</span></td>
     <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">no la ha guardado</span>'}</td>
     ${r.tareas.map(v => `<td class="num">${v === '' ? '—' : esc(v)}</td>`).join('')}
   </tr>`).join('') || '<tr><td colspan="5" class="hint">No hay estudiantes autorizados.</td></tr>';
@@ -1181,8 +1303,8 @@ function dcProgreso(){
 $('#btnCsv').addEventListener('click', () => {
   if (!DC) return;
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica', 'Evaluación FE (100)'].concat(DC.tareas.map(t => t.titulo));
-  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos + '/' + CASES.length, r.notaCalc].concat(r.tareas).map(q).join(';')));
+  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)'].concat(DC.tareas.map(t => t.titulo));
+  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc].concat(r.tareas).map(q).join(';')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Notas seminario fiscal ISAE ' + todayISO() + '.csv'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
@@ -1195,20 +1317,23 @@ function dcEntregas(){
   if (prev && DC.tareas.some(t => t.id === prev)) sel.value = prev;
   const t = DC.tareas.find(x => x.id === sel.value);
   if (!t){ $('#enBody').innerHTML = '<tr><td colspan="6" class="hint">No hay tareas publicadas.</td></tr>'; $('#enFalta').textContent = ''; return; }
-  const en = DC.entregas.filter(x => x.tarea_id === t.id);
+  const en = DC.entregas.filter(x => x.tarea_id === t.id && x.estado !== 'borrador');
+  const nBorr = DC.entregas.filter(x => x.tarea_id === t.id && x.estado === 'borrador').length;
   $('#enBody').innerHTML = en.map(x => `<tr>
     <td>${esc(nombreDe(x.user_id))}</td>
-    <td>${fdate(x.creado)}${t.fecha_entrega && x.creado.slice(0, 10) > t.fecha_entrega ? '<br><span class="pill err">Tarde</span>' : ''}</td>
-    <td><a href="#" data-dcdl="${esc(x.archivo)}" data-name="${esc(x.nombre_archivo)}">${esc(x.nombre_archivo || 'archivo')}</a>${x.comentario ? '<br><span class="hint">' + esc(x.comentario) + '</span>' : ''}</td>
+    <td>${fdate(x.actualizado || x.creado)}${t.fecha_entrega && String(x.actualizado || x.creado).slice(0, 10) > t.fecha_entrega ? '<br><span class="pill err">Tarde</span>' : ''}</td>
+    <td>${x.respuesta ? `<button class="btn small secondary" data-ficha="${x.id}">Ver taller</button>` : ""}${x.archivo ? `<a href="#" data-dcdl="${esc(x.archivo)}" data-name="${esc(x.nombre_archivo)}">${esc(x.nombre_archivo || 'archivo')}</a>` : ""}${x.comentario ? '<br><span class="hint">' + esc(x.comentario) + '</span>' : ''}</td>
     <td><input class="mini" type="number" min="0" max="${t.puntos || 100}" step="0.5" id="cal-${x.id}" value="${x.calificacion ?? ''}"> <span class="hint">/ ${t.puntos || 100}</span></td>
     <td><textarea class="mini" rows="2" id="ret-${x.id}">${esc(x.retro || '')}</textarea></td>
     <td><button class="btn small" data-calificar="${x.id}">Guardar</button></td></tr>`).join('') || '<tr><td colspan="6" class="hint">Nadie ha entregado todavía.</td></tr>';
   const entregaron = new Set(en.map(x => x.user_id));
   const faltan = estudiantes().filter(a => { const p = DC.perfiles.find(x => x.email === a.email); return !p || !entregaron.has(p.id); }).map(a => a.nombre || a.email);
-  $('#enFalta').textContent = faltan.length ? 'Faltan por entregar: ' + faltan.join(', ') + '.' : 'Todos entregaron.';
+  $('#enFalta').textContent = (faltan.length ? 'Faltan por entregar: ' + faltan.join(', ') + '.' : 'Todos entregaron.') + (nBorr ? ' ' + nBorr + ' con borrador sin entregar.' : '');
 }
 $('#dcTarea').addEventListener('change', dcEntregas);
 $('#enBody').addEventListener('click', async e => {
+  const fid = e.target.dataset.ficha;
+  if (fid){ const x = DC.entregas.find(y => y.id === fid); $('#fichaTit').textContent = nombreDe(x.user_id) + ' · ' + ((DC.tareas.find(t => t.id === x.tarea_id) || {}).titulo || ''); $('#fichaBody').innerHTML = fichaTaller1(x.respuesta); $('#fichaOverlay').classList.remove('hidden'); return; }
   const dl = e.target.dataset.dcdl;
   if (dl){ e.preventDefault(); try { window.open(await api.fileUrl('entregas', dl, e.target.dataset.name), '_blank', 'noopener'); } catch(err){ alert(errText(err)); } return; }
   const id = e.target.dataset.calificar; if (!id) return;
@@ -1231,7 +1356,7 @@ $('#btnAn').addEventListener('click', async e => {
 });
 $('#btnTa').addEventListener('click', async e => {
   const titulo = $('#taTit').value.trim(); if (!titulo) return errMsg('#taMsg', 'Escriba el título.');
-  try { await busy(e.target, () => api.insert('tareas', { titulo, descripcion: $('#taDesc').value.trim(), fecha_entrega: $('#taFecha').value || null, puntos: parseInt($('#taPts').value) || 100 })); $('#taTit').value = $('#taDesc').value = ''; await dcLoad(); dcPublicar(); okMsg('#taMsg', 'Tarea publicada.'); }
+  try { await busy(e.target, () => api.insert('tareas', { titulo, descripcion: $('#taDesc').value.trim(), fecha_entrega: $('#taFecha').value || null, puntos: parseInt($('#taPts').value) || 100, formato: $('#taFmt').value })); $('#taTit').value = $('#taDesc').value = ''; await dcLoad(); dcPublicar(); okMsg('#taMsg', 'Tarea publicada.'); }
   catch(err){ errMsg('#taMsg', err); }
 });
 $('#btnMa').addEventListener('click', async e => {
@@ -1280,6 +1405,9 @@ $('#acBody').addEventListener('click', async e => {
   if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Seguro?'; return; }
   try { await api.remove('acceso', { email: em }); await dcLoad(); dcAcceso(); } catch(err){ alert(errText(err)); }
 });
+
+$('#fichaClose').addEventListener('click', () => $('#fichaOverlay').classList.add('hidden'));
+$('#fichaOverlay').addEventListener('click', e => { if (e.target.id === 'fichaOverlay') $('#fichaOverlay').classList.add('hidden'); });
 
 /* ======== Arranque ======== */
 (async () => { try { await start(); } catch(err){ errMsg('#authMsg', err); } })();

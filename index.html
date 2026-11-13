@@ -383,7 +383,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <ul class="tight">
           <li><b>Contribuyente:</b> empresa o persona con RUC. Requiere RUC, DV y nombre.</li>
           <li><b>Consumidor final:</b> persona que compra para su uso. El RUC o la cédula son opcionales.</li>
-          <li><b>Gobierno:</b> entidad del Estado. Requiere RUC y DV; en la vida real hay que mostrar las retenciones.</li>
+          <li><b>Gobierno:</b> entidad del Estado. Requiere RUC y DV. El Estado es agente de retención: retiene el 50 % del ITBMS de la factura (en servicios profesionales el proveedor puede optar por el 100 %).</li>
           <li><b>Extranjero:</b> se identifica con pasaporte o identificación de su país.</li>
         </ul>
         <h3>Errores frecuentes</h3>
@@ -521,7 +521,7 @@ const CASES = [
   {id:'c5', titulo:'Caso 5 · Venta al Estado', emisor:'E2',
    texto:'Aula Contable Consultores dicta una capacitación (código SRV-02) al <b>Ministerio de Ejemplo</b> (gobierno · RUC 8-NT-1-12345 · DV 10 · Avenida Perú, Ciudad de Panamá · compras@ministerio-ejemplo.test) por B/.800.00 + ITBMS 7 %. Pago a crédito, 30 días. Fecha: la de hoy.',
    check:d=>d.emisor==='E2'&&d.tipoDoc==='01'&&d.receptor.tipo==='03'&&near(d.totales.total,856)&&d.pago.forma==='01',
-   pista:'800.00 + ITBMS 7 % (56.00) = B/.856.00. Receptor 03 (gobierno), forma de pago crédito. En la vida real, la factura al Estado muestra las retenciones.'}
+   pista:'800.00 + ITBMS 7 % (56.00) = B/.856.00. Receptor 03 (gobierno), forma de pago crédito. Al pagar, el Ministerio retiene el 50 % del ITBMS (B/.28.00) y le transfiere B/.828.00.'}
 ];
 
 /* ---------- utilidades ---------- */
@@ -822,7 +822,7 @@ function refreshReceptor(){
   $('#rHint').textContent={
     '01':'Contribuyente: necesita RUC, DV y nombre. Así el cliente puede usar el ITBMS como crédito fiscal.',
     '02':'Consumidor final: el RUC o la cédula y el nombre son opcionales.',
-    '03':'Gobierno: necesita RUC y DV. En la vida real la factura al Estado debe mostrar las retenciones.',
+    '03':'Gobierno: necesita RUC, DV y nombre. Las entidades del Estado son agentes de retención: al pagar, retienen el 50 % del ITBMS de la factura y lo entregan a la DGI.',
     '04':'Extranjero: se identifica con pasaporte o identificación de su país, y se indica el país.'}[t];
 }
 function refreshPago(){$('#pPlazoBox').classList.toggle('hidden',$('#pForma').value!=='01')}
@@ -898,7 +898,7 @@ function validate(d){
     else if(!re.test(r.ruc)){E.push('El RUC «'+r.ruc+'» no tiene un formato válido para '+(r.tipo==='03'?'gobierno':(r.tipoContrib==='1'?'persona natural (ej.: 8-123-456)':'persona jurídica (ej.: 155712345-2-2021)'))+'.');bad.push('#rRuc')}
     if(!/^\d{1,2}$/.test(r.dv)){E.push('El DV debe tener 1 o 2 dígitos.');bad.push('#rDv')}
     if(!r.nombre){E.push('Indique el nombre o razón social del receptor.');bad.push('#rNombre')}
-    if(r.tipo==='03')W.push('Factura al Estado: en la vida real debe mostrar los campos de retenciones.');
+    if(r.tipo==='03'){const ret=r2(d.totales.itbms*0.5);W.push('Factura al Estado: la entidad le retendrá '+money(ret)+' (50 % del ITBMS) y se lo entregará a la DGI. Usted recibirá '+money(d.totales.total-ret)+'. Esa retención la puede rebajar en su declaración de ITBMS (Formulario 430).');}
   }
   if(r.tipo==='02'&&r.ruc&&!(RUC_NAT.test(r.ruc)||RUC_JUR.test(r.ruc))){E.push('Si escribe la cédula o el RUC del consumidor final, debe tener un formato válido.');bad.push('#rRuc')}
   if(r.tipo==='04'){

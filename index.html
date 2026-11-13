@@ -941,6 +941,14 @@ function makeCufe(d){
   return 'SIM-'+base+'-'+sha256(base+d.id).slice(0,12).toUpperCase();
 }
 
+function limpiarFormulario(){
+  $('#docForm').reset();
+  $('#fFecha').value = todayISO();
+  ITEMS = [newItem()]; renderItems();
+  $$('.bad').forEach(x => x.classList.remove('bad'));
+  prepareForm();
+}
+
 $('#btnEmitir').addEventListener('click', async () => {
   const d = collect(); const v = validate(d);
   if (v.E.length){ showMsgs(v, ''); $('#docMsgs').insertAdjacentHTML('afterbegin', '<div class="msg err"><b>Documento rechazado.</b> Corrija los errores y vuelva a emitir.</div>'); return; }
@@ -956,7 +964,7 @@ $('#btnEmitir').addEventListener('click', async () => {
   if (ca && ca.grupo !== 'Evaluación') $('#docMsgs').insertAdjacentHTML('beforeend', ca.c.check(d) ? `<div class="msg ok">✓ Este documento cumple el ${esc(ca.c.titulo.split('·')[0].trim())}.</div>` : `<div class="msg warn">Este documento quedó emitido, pero no cumple el ${esc(ca.c.titulo.split('·')[0].trim())}. Revise el enunciado; puede anularlo y emitir otro.</div>`);
   if (ca && ca.grupo === 'Evaluación') $('#docMsgs').insertAdjacentHTML('beforeend', '<div class="msg ok">Documento guardado para la evaluación.</div>');
   openCafe(d);
-  ITEMS = [newItem()]; renderItems(); $('#fNum').value = nextNum(); refreshRef();
+  limpiarFormulario();
 });
 
 /* ---------- CAFE ---------- */
@@ -1018,7 +1026,7 @@ function elegirCaso(k){
   CASO = k; CASO_OCULTO = false;
   const a = casoActivo();
   if (a && a.c.emisor !== STATE.emisor){ STATE.emisor = a.c.emisor; save(); renderEmisor(); }
-  renderCasoBar(); prepareForm();
+  renderCasoBar(); limpiarFormulario(); $('#docMsgs').innerHTML = '';
 }
 $('#casoSel').addEventListener('change', e => elegirCaso(e.target.value));
 $('#casoToggle').addEventListener('click', () => { CASO_OCULTO = !CASO_OCULTO; renderCasoBar(); });

@@ -941,12 +941,42 @@ function makeCufe(d){
   return 'SIM-'+base+'-'+sha256(base+d.id).slice(0,12).toUpperCase();
 }
 
+/* Nota de crédito o débito: al elegir la factura, copia receptor y pago */
+(function(){
+  const sel = $('#fRef');
+  const box = document.createElement('div');
+  box.className = 'row'; box.style.marginTop = '8px';
+  box.innerHTML = '<button type="button" class="btn small secondary" id="btnCopiarItems" disabled>Copiar los ítems de esa factura</button><span class="hint" id="refHint"></span>';
+  sel.parentElement.appendChild(box);
+})();
+function facturaRef(){ return STATE.docs.find(x => x.id === $('#fRef').value) || null; }
+$('#fRef').addEventListener('change', () => {
+  const f = facturaRef();
+  $('#btnCopiarItems').disabled = !f;
+  if (!f){ $('#refHint').textContent = ''; return; }
+  const r = f.receptor || {};
+  const put = (id, v) => { const el = $(id); if (el) el.value = v ?? ''; };
+  put('#rTipo', r.tipo); put('#rTipoContrib', r.tipoContrib || '2');
+  put('#rRuc', r.ruc); put('#rDv', r.dv); put('#rPas', r.pas); put('#rPais', r.pais);
+  put('#rNombre', r.nombre); put('#rDir', r.dir); put('#rCorreo', r.correo);
+  if (f.pago){ put('#pForma', f.pago.forma); if (f.pago.plazo) put('#pPlazo', f.pago.plazo); }
+  refreshReceptor(); refreshPago();
+  $$('.bad').forEach(x => x.classList.remove('bad'));
+  $('#refHint').textContent = 'Se copiaron el receptor y la forma de pago de la factura ' + f.numero + '.';
+});
+$('#btnCopiarItems').addEventListener('click', () => {
+  const f = facturaRef(); if (!f) return;
+  ITEMS = f.items.map(x => ({ ...x })); renderItems();
+  $('#refHint').textContent = 'Ítems copiados. Ajuste las cantidades o montos a lo que corrige la nota (por ejemplo, solo lo devuelto).';
+});
+
 function limpiarFormulario(){
   $('#docForm').reset();
   $('#fFecha').value = todayISO();
   ITEMS = [newItem()]; renderItems();
   $$('.bad').forEach(x => x.classList.remove('bad'));
   prepareForm();
+  $('#btnCopiarItems').disabled = true; $('#refHint').textContent = '';
 }
 
 $('#btnEmitir').addEventListener('click', async () => {

@@ -941,6 +941,81 @@ function makeCufe(d){
   return 'SIM-'+base+'-'+sha256(base+d.id).slice(0,12).toUpperCase();
 }
 
+/* ======== Información de otros valores (acarreo, seguro, retención, tiempo de pago) ======== */
+const OBJ_RET = [
+  { v: '',  t: '— Sin retención —', p: 0 },
+  { v: '1', t: 'Pago por servicio profesional al Estado 100 %', p: 100 },
+  { v: '2', t: 'Pago por venta de bienes o servicios al Estado 50 %', p: 50 },
+  { v: '3', t: 'Pago o acreditación a no domiciliado o empresa constituida en el exterior 100 %', p: 100 },
+  { v: '4', t: 'Pago o acreditación por compra de bienes o servicios 50 %', p: 50 },
+  { v: '5', t: 'Pago a comercio afiliado a sistema de TC/TD 50 %', p: 50 },
+  { v: '7', t: 'Otros (disminución de la retención)', p: 0 }
+];
+const TIEMPO = { '1': 'Contado', '2': 'Crédito', '3': 'Mixto' };
+(function(){
+  const card = $('#pForma').closest('.card');
+  card.querySelector('h2').textContent = '4. Pago e información de otros valores';
+  card.insertAdjacentHTML('beforeend', `
+    <h3>Información de otros valores</h3>
+    <div class="grid">
+      <div><label>Total precio final</label><input id="ovPrecio" disabled></div>
+      <div><label for="ovAcarreo">Total acarreo</label><input id="ovAcarreo" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      <div><label for="ovSeguro">Total seguro</label><input id="ovSeguro" type="number" step="0.01" min="0" placeholder="0.00"></div>
+      <div><label>Total factura</label><input id="ovTotal" disabled></div>
+      <div><label for="ovObjRet">Objeto de retención</label><select id="ovObjRet">${OBJ_RET.map(o => `<option value="${o.v}">${esc(o.t)}</option>`).join('')}</select></div>
+      <div><label>Monto de retención</label><input id="ovMontoRet" disabled></div>
+      <div><label for="ovTiempo">Tiempo de pago <span class="req">*</span></label><select id="ovTiempo"><option value="1">Contado</option><option value="2">Crédito</option><option value="3">Mixto</option></select></div>
+    </div>
+    <div class="hint" style="margin-top:6px">Total factura = precio final + acarreo + seguro. La retención la hace quien paga (por ejemplo, el Estado) y la entrega a la DGI: no cambia el total de la factura, pero el emisor recibe menos dinero.</div>`);
+  ['#ovAcarreo', '#ovSeguro'].forEach(id => $(id).addEventListener('input', () => calc()));
+  $('#ovObjRet').addEventListener('change', () => calc());
+  $('#pForma').addEventListener('change', () => { $('#ovTiempo').value = $('#pForma').value === '01' ? '2' : '1'; });
+})();
+function otrosValores(t){
+  const ac = Math.max(0, parseFloat($('#ovAcarreo').value) || 0), se = Math.max(0, parseFloat($('#ovSeguro').value) || 0);
+  const o = OBJ_RET.find(x => x.v === $('#ovObjRet').value) || OBJ_RET[0];
+  return { ac, se, total: r2(t.total + ac + se), o, ret: r2(t.itbms * o.p / 100) };
+}
+const _calcBase = calc;
+calc = function(){
+  const t = _calcBase(); if (!$('#ovPrecio')) return t;
+  const v = otrosValores(t);
+  $('#ovPrecio').value = money(t.total); $('#ovTotal').value = money(v.total); $('#ovMontoRet').value = money(v.ret);
+  if (v.ac || v.se) $('#totalsBox').insertAdjacentHTML('beforeend', `<div><span>Acarreo y seguro</span><span>${money(v.ac + v.se)}</span></div><div class="grand"><span>Total factura</span><span>${money(v.total)}</span></div>`);
+  if (document.activeElement !== $('#pMonto')) $('#pMonto').value = v.total.toFixed(2);
+  return t;
+};
+const _collectBase = collect;
+collect = function(){
+  const d = _collectBase(); const v = otrosValores(d.totales);
+  d.totales.precioFinal = d.totales.total; d.totales.acarreo = v.ac; d.totales.seguro = v.se; d.totales.total = v.total;
+  d.retencion = { objeto: v.o.v, texto: v.o.p || v.o.v ? v.o.t : '', pct: v.o.p, monto: v.ret };
+  d.pago.tiempo = $('#ovTiempo').value;
+  return d;
+};
+const _validateBase = validate;
+validate = function(d){
+  const v = _validateBase(d); const r = d.receptor, o = d.retencion || {};
+  v.W = v.W.filter(m => !m.startsWith('Factura al Estado: la entidad le retendrá'));
+  if (r.tipo === '03'){
+    if (o.objeto === '1' || o.objeto === '2') v.W.push('Factura al Estado: la entidad le retendrá ' + money(o.monto) + ' (' + o.pct + ' % del ITBMS) y se lo entregará a la DGI. Usted recibirá ' + money(d.totales.total - o.monto) + '.');
+    else { v.W.push('Factura al Estado: en «Objeto de retención» elija «Pago por venta de bienes o servicios al Estado 50 %» (o «servicio profesional al Estado 100 %» si es un profesional).'); v.bad.push('#ovObjRet'); }
+  } else if (o.objeto === '1' || o.objeto === '2') { v.W.push('Eligió una retención del Estado, pero el receptor no es Gobierno.'); v.bad.push('#ovObjRet'); }
+  if (d.pago.forma === '01' && d.pago.tiempo === '1') { v.W.push('La forma de pago es crédito, pero el tiempo de pago dice contado.'); v.bad.push('#ovTiempo'); }
+  if (d.pago.tiempo === '2' && d.pago.forma !== '01') v.W.push('El tiempo de pago es crédito: revise que la forma de pago también sea crédito.');
+  return v;
+};
+const _openCafeBase = openCafe;
+openCafe = function(d){
+  _openCafeBase(d);
+  const x = [];
+  if (d.totales && (d.totales.acarreo || d.totales.seguro)) x.push('Precio final: ' + money(d.totales.precioFinal) + ' · Acarreo: ' + money(d.totales.acarreo) + ' · Seguro: ' + money(d.totales.seguro));
+  if (d.pago && d.pago.tiempo) x.push('Tiempo de pago: ' + (TIEMPO[d.pago.tiempo] || ''));
+  if (d.retencion && d.retencion.texto) x.push('Objeto de retención: ' + esc(d.retencion.texto) + ' · Monto de retención: ' + money(d.retencion.monto));
+  const l = $('#cafe .legal');
+  if (x.length && l) l.insertAdjacentHTML('beforebegin', `<div class="box" style="font-size:12px;margin-top:10px"><b>Información de otros valores</b>${x.join('<br>')}</div>`);
+};
+
 /* Nota de crédito o débito: al elegir la factura, copia receptor y pago */
 (function(){
   const sel = $('#fRef');
@@ -959,8 +1034,9 @@ $('#fRef').addEventListener('change', () => {
   put('#rTipo', r.tipo); put('#rTipoContrib', r.tipoContrib || '2');
   put('#rRuc', r.ruc); put('#rDv', r.dv); put('#rPas', r.pas); put('#rPais', r.pais);
   put('#rNombre', r.nombre); put('#rDir', r.dir); put('#rCorreo', r.correo);
-  if (f.pago){ put('#pForma', f.pago.forma); if (f.pago.plazo) put('#pPlazo', f.pago.plazo); }
-  refreshReceptor(); refreshPago();
+  if (f.pago){ put('#pForma', f.pago.forma); if (f.pago.plazo) put('#pPlazo', f.pago.plazo); if (f.pago.tiempo) put('#ovTiempo', f.pago.tiempo); }
+  if (f.retencion) put('#ovObjRet', f.retencion.objeto || '');
+  refreshReceptor(); refreshPago(); calc();
   $$('.bad').forEach(x => x.classList.remove('bad'));
   $('#refHint').textContent = 'Se copiaron el receptor y la forma de pago de la factura ' + f.numero + '.';
 });

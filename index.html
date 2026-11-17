@@ -128,6 +128,14 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
 .ebox{border:1px solid var(--line);border-radius:8px;padding:8px 10px}
 .casobar{position:sticky;top:0;z-index:6;border-left:4px solid var(--brand);box-shadow:0 3px 10px rgba(20,30,50,.10)}
 .casobar .ctit{font-weight:700;color:var(--brand)}
+.rtform td{padding:5px 6px;vertical-align:middle}
+.rtform .rtsec td{background:var(--soft);color:var(--brand);font-weight:700;font-size:13.5px;padding:7px 8px}
+.rtform .rtlab{font-size:13.5px}
+.rtform .rtnum{width:40px;text-align:center;font-weight:700;color:var(--muted)}
+.rtform input.rtauto{background:var(--soft);color:var(--ink);font-weight:600;border-style:dashed}
+.rti{border:1px solid var(--line);background:var(--card);color:var(--brand);border-radius:50%;width:22px;height:22px;font:700 12px Georgia,serif;cursor:pointer;padding:0;line-height:20px;text-align:center}
+.rti:hover{background:var(--brand);color:#fff}
+.rtayuda{background:color-mix(in srgb,var(--brand) 6%,var(--card));border-left:3px solid var(--brand);padding:7px 10px;font-size:13px;text-align:justify;margin-top:4px}
 .ebox b{color:var(--brand)}
 .tf textarea{font-size:13.5px}
 .ficha{background:var(--card);color:var(--ink);max-width:980px;width:100%;border-radius:8px;padding:20px}
@@ -363,66 +371,19 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
       </div>
 
       <div class="card">
-        <h2>Declaración jurada de rentas · Persona natural · Período fiscal 2026</h2>
-        <p class="hint" style="margin-top:0">Práctica con datos ficticios. Los montos se escriben por año completo, en balboas. El simulador calcula todo a medida que usted escribe.</p>
-        <h3>1. Datos del declarante</h3>
-        <div class="grid">
-          <div><label for="rtNombre">Nombre completo</label><input id="rtNombre"></div>
-          <div><label for="rtCed">Cédula o RUC</label><input id="rtCed" placeholder="Ej.: 8-123-456"></div>
-          <div><label for="rtTipo">Tipo de declarante <span class="req">*</span></label>
-            <select id="rtTipo">
-              <option value="A">Asalariado (solo salario)</option>
-              <option value="I">Profesional independiente o comerciante</option>
-              <option value="M">Mixto (salario e ingresos propios)</option>
-            </select></div>
+        <div class="row" style="margin-bottom:6px">
+          <div>
+            <h2 style="margin:0">Declaración jurada de rentas · Persona natural</h2>
+            <div class="hint">Formulario de práctica · Asalariado puro · Período 2026 · Sin valor fiscal</div>
+          </div>
+          <label class="right" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600;color:var(--brand)"><input type="checkbox" id="rtVerAyuda" style="width:auto"> Ver todas las explicaciones</label>
         </div>
-        <div class="hint" id="rtTipoHint"></div>
-      </div>
-
-      <div class="card" id="rtSalCard">
-        <h2>2. Ingresos por salarios</h2>
-        <div class="tablewrap"><table class="items">
-          <thead><tr><th>Empleador</th><th class="num" style="width:22%">Salario del año (con el XIII mes)</th><th class="num" style="width:20%">ISR que le retuvo</th><th style="width:5%"></th></tr></thead>
-          <tbody id="rtEmpBody"></tbody>
-        </table></div>
-        <div class="row" style="margin-top:8px"><button class="btn small secondary" type="button" id="rtAddEmp">+ Agregar otro empleador</button></div>
-        <div class="hint" style="margin-top:6px">El salario del año se calcula con 13 pagos: 12 meses más el décimo tercer mes. El ISR retenido aparece en el certificado que entrega cada empleador (es lo que reportó en la Planilla 03).</div>
-      </div>
-
-      <div class="card" id="rtIndCard">
-        <h2>3. Ingresos como independiente</h2>
-        <div class="grid">
-          <div><label for="rtHon">Honorarios o ventas del año</label><input id="rtHon" type="number" step="0.01" min="0" placeholder="0.00"></div>
-          <div><label for="rtOtros">Otros ingresos gravables (por ejemplo, alquileres)</label><input id="rtOtros" type="number" step="0.01" min="0" placeholder="0.00"></div>
-          <div><label for="rtGastos">Costos y gastos del negocio</label><input id="rtGastos" type="number" step="0.01" min="0" placeholder="0.00"></div>
-        </div>
-        <div class="hint" style="margin-top:6px">Solo cuentan los gastos necesarios para producir el ingreso (alquiler de la oficina, sueldos de sus empleados, servicios, materiales), respaldados con factura electrónica.</div>
+        <p class="hint" style="margin-top:0">Las casillas con fondo gris se calculan solas: no se escriben. Pulse <b>i</b> en cualquier casilla para ver qué va ahí y cuándo se usa.</p>
+        <div class="grid" id="rtCab"></div>
       </div>
 
       <div class="card">
-        <h2>4. Deducciones personales</h2>
-        <div class="tablewrap"><table>
-          <thead><tr><th>Concepto</th><th class="num" style="width:20%">Monto pagado</th><th style="width:30%">Límite</th><th class="num" style="width:16%">Se acepta</th></tr></thead>
-          <tbody>
-            <tr><td>Intereses de hipoteca de la vivienda principal</td><td><input id="rtHip" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">Hasta B/.15,000 al año *</td><td class="num" id="rtHipOk"></td></tr>
-            <tr><td>Intereses de préstamos para estudios (por ejemplo, IFARHU)</td><td><input id="rtEdu" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">Sin tope</td><td class="num" id="rtEduOk"></td></tr>
-            <tr><td>Gastos médicos no cubiertos por el seguro</td><td><input id="rtMed" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">Sin tope, con factura</td><td class="num" id="rtMedOk"></td></tr>
-            <tr><td>Primas de seguro de salud u hospitalización</td><td><input id="rtSeg" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">Sin tope *</td><td class="num" id="rtSegOk"></td></tr>
-            <tr><td>Gastos escolares de los hijos · N.º de dependientes <input id="rtEscN" type="number" min="0" step="1" value="0" style="width:70px;display:inline-block;margin-left:6px"></td><td><input id="rtEsc" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">Hasta B/.3,600 por dependiente (DGI)</td><td class="num" id="rtEscOk"></td></tr>
-            <tr><td>Aportes a un fondo de jubilación privado</td><td><input id="rtJub" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">10 % del ingreso bruto, máximo B/.15,000 *</td><td class="num" id="rtJubOk"></td></tr>
-            <tr><td>Donaciones a instituciones de beneficencia</td><td><input id="rtDon" type="number" step="0.01" min="0" placeholder="0.00"></td><td class="hint">Hasta B/.50,000 *</td><td class="num" id="rtDonOk"></td></tr>
-          </tbody>
-        </table></div>
-        <div class="hint" style="margin-top:6px">* Límite tomado de guías profesionales; confírmelo en la DGI antes de usarlo con un cliente. Toda deducción debe estar respaldada con factura o certificado.</div>
-      </div>
-
-      <div class="card">
-        <h2>5. Cálculo del impuesto</h2>
-        <div class="grid">
-          <div><label for="rtEstPag">Impuesto estimado que pagó durante 2026</label><input id="rtEstPag" type="number" step="0.01" min="0" placeholder="0.00"><div class="hint">Las tres cuotas del 30 de junio, 30 de septiembre y 31 de diciembre.</div></div>
-        </div>
-        <div class="totals" style="max-width:520px;margin:14px 0 0 0" id="rtTot"></div>
-        <div class="msgs" id="rtTarifa"></div>
+        <div class="tablewrap"><table class="rtform"><tbody id="rtBody"></tbody></table></div>
         <div class="row" style="margin-top:12px">
           <button class="btn" type="button" id="rtRevisar">Revisar caso</button>
           <button class="btn secondary" type="button" id="rtGuardar">Guardar declaración</button>
@@ -433,7 +394,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
 
       <div class="card">
         <h2>Mis declaraciones guardadas</h2>
-        <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Caso</th><th>Tipo</th><th class="num">Renta neta gravable</th><th class="num">Impuesto</th><th class="num">Resultado</th><th></th></tr></thead><tbody id="rtLista"></tbody></table></div>
+        <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Caso</th><th class="num">Renta neta gravable (25)</th><th class="num">Impuesto causado (27)</th><th class="num">Resultado</th><th></th></tr></thead><tbody id="rtLista"></tbody></table></div>
         <p class="hint" id="rtVacio">Todavía no ha guardado declaraciones.</p>
       </div>
     </div>
@@ -1308,109 +1269,175 @@ $('#btnNota').addEventListener('click', async () => {
   } catch(err){ errMsg('#notaBox', 'No se pudo guardar la nota: ' + errText(err)); }
 });
 
-/* ======== Declaración de renta · persona natural ======== */
-let RENTAS = [];          // declaraciones guardadas por el usuario (data + dbid)
-let RT_CASO = '', RT_OCULTO = false, RT_EMP = [];
-const RT_TIPO = { A: 'Asalariado', I: 'Independiente', M: 'Mixto' };
+/* ======== Declaración de renta · persona natural asalariada (formato del Formulario 1, asalariado puro) ======== */
+(function(){ const t = $('#tabs [data-tab="evaluacion"]'); const b = document.createElement('button'); b.dataset.tab = 'renta'; b.textContent = 'Declaración de renta'; t.after(b); })();
+let RENTAS = [];
+let RT_CASO = '', RT_OCULTO = false;
 
 function tarifaISR(r){
   if (r <= 11000) return 0;
   if (r <= 50000) return r2((r - 11000) * 0.15);
   return r2(5850 + (r - 50000) * 0.25);
 }
-function tarifaTexto(r){
-  if (r <= 11000) return 'La renta neta gravable no pasa de B/.11,000: el impuesto es cero.';
-  if (r <= 50000) return '(' + money(r) + ' − B/.11,000) × 15 % = ' + money(tarifaISR(r));
-  return 'B/.5,850 + (' + money(r) + ' − B/.50,000) × 25 % = ' + money(tarifaISR(r));
-}
 
-const RT_CASOS = [
-  { id: 'r3', auto: true, titulo: 'Ejemplo resuelto · Asalariada que recupera dinero',
-    texto: 'Marta Ejemplo (cédula 8-333-3333) gana B/.2,000 al mes en una sola empresa: B/.26,000 en el año con el XIII mes. Su empleador le retuvo B/.2,250 de ISR. Pagó B/.4,000 de colegiatura y útiles de su único hijo. No tiene otros ingresos.',
-    pista: 'Tipo: asalariado. Salario 26,000. Gastos escolares: pagó 4,000, pero el tope es 3,600 por dependiente. Renta neta gravable 26,000 − 3,600 = 22,400. Impuesto (22,400 − 11,000) × 15 % = 1,710. Le retuvieron 2,250: tiene un saldo a favor de B/.540. Por eso a un asalariado puro, aunque no esté obligado, le conviene declarar.',
-    entrada: { tipo: 'A', nombre: 'Marta Ejemplo', ced: '8-333-3333', emp: [{ n: 'Empresa Ejemplo, S.A.', sal: 26000, ret: 2250 }], hon: 0, otros: 0, gastos: 0, ded: { hip: 0, edu: 0, med: 0, seg: 0, escN: 1, esc: 4000, jub: 0, don: 0 }, estPag: 0 },
-    esperado: { rng: 22400, imp: 1710, neto: -540 } },
-  { id: 'r2', titulo: 'Caso para la clase · Contadora independiente',
-    texto: 'Lucía Práctica (cédula 4-222-2222) es contadora independiente. En 2026 facturó B/.48,000 en honorarios y tuvo B/.12,000 de gastos del negocio (alquiler de su oficina, internet y una asistente). Pagó B/.9,000 de intereses de la hipoteca de su casa y B/.4,000 de gastos escolares de sus 2 hijos. Durante 2026 pagó B/.1,500 de impuesto estimado.',
-    pista: 'Tipo: independiente. Renta neta 48,000 − 12,000 = 36,000. Deducciones: hipoteca 9,000 + escolares 4,000 (tope 7,200 para dos hijos: se acepta todo) = 13,000. Renta neta gravable 23,000. Impuesto (23,000 − 11,000) × 15 % = 1,800. Menos estimado pagado 1,500 = B/.300 a pagar. La estimada para 2027 sería 1,800, en tres cuotas de B/.600.',
-    esperado: { rng: 23000, imp: 1800, neto: 300 } }
+/* Encabezado */
+const RT_CAB = [
+  { id: 'ruc', label: 'RUC', ph: 'Ej.: 8-333-3333', ayuda: 'Número de RUC del contribuyente. En la persona natural es su cédula.' },
+  { id: 'dv', label: 'D.V.', ph: 'Ej.: 45', ayuda: 'Dígito verificador del RUC. Aparece en e-Tax 2.0.' },
+  { id: 'nombre', label: 'Nombre', ph: 'Nombre completo', ayuda: 'Nombre completo del contribuyente, como aparece en su cédula.' },
+  { id: 'periodo', label: 'Período', fijo: '2026', ayuda: 'Año fiscal que se declara. La declaración del período 2026 se presenta antes del 15 de marzo de 2027.' },
+  { id: 'nac', label: 'Fecha de nacimiento', ph: 'dd/mm/aaaa', ayuda: 'Fecha de nacimiento del contribuyente. Se usa, entre otras cosas, para calcular las cuotas de la CSS de algunos independientes.' },
+  { id: 'pini', label: 'Período inicial', fijo: '01/01/2026', ayuda: 'Primer día del período fiscal. En la persona natural es el año calendario.' },
+  { id: 'pfin', label: 'Período final', fijo: '31/12/2026', ayuda: 'Último día del período fiscal.' },
+  { id: 'tipoDec', label: 'Tipo de declaración', opts: ['Normal', 'Sin operaciones', 'Final'], ayuda: 'Normal: la de un período fiscal. Sin operaciones: quien no tuvo actividad pero debe declarar. Final: quien cesa operaciones (se presenta a más tardar 30 días después del cierre).' },
+  { id: 'itbms', label: 'Contribuyente de ITBMS/Timbre', opts: ['No aplica', 'ITBMS', 'Timbre', 'ITBMS y Timbre', 'Exento'], ayuda: 'Indique si además es contribuyente de ITBMS o de timbre. Un asalariado puro normalmente marca «No aplica».' },
+  { id: 'embajada', label: 'Empleado de embajada', check: true, ayuda: 'Márquelo solo si trabaja en una embajada. Cambia la tarifa del seguro educativo de 2.75 % a 1.25 % (casilla 35).' },
+  { id: 'conyuge', label: 'Nombre del cónyuge', ph: 'Solo si declaran juntos', ayuda: 'Llénelo solo si declara en forma conjunta con su cónyuge. Al llenarlo, la casilla 18 (deducción básica) toma B/.800.' },
+  { id: 'cedConyuge', label: 'Cédula del cónyuge', ph: '', ayuda: 'Cédula del cónyuge, solo en declaración conjunta.' },
+  { id: 'present', label: 'Tipo de presentación', opts: ['Original', 'Rectificativa'], ayuda: 'Original: la primera vez que se presenta el período. Rectificativa: corrige una ya presentada; se permite una sola vez por período, dentro de 36 meses, y cuesta B/.100 a la persona natural.' },
+  { id: 'sector', label: 'Sector o clase', fijo: 'ASALARIADO-PURO', ayuda: 'Se define al escoger el formulario. Asalariado puro: su única fuente de ingresos es el salario.' }
 ];
 
-/* Formulario */
-(function(){
-  const emisoresTab = $('#tabs [data-tab="evaluacion"]');
-  const b = document.createElement('button'); b.dataset.tab = 'renta'; b.textContent = 'Declaración de renta';
-  emisoresTab.after(b);
-})();
-function rtEmpVacio(){ return { n: '', sal: 0, ret: 0 }; }
-function rtRenderEmp(){
-  $('#rtEmpBody').innerHTML = RT_EMP.map((e, i) => `<tr>
-    <td><input data-e="${i}" data-k="n" value="${esc(e.n)}" placeholder="Nombre de la empresa"></td>
-    <td class="num"><input data-e="${i}" data-k="sal" type="number" step="0.01" min="0" value="${e.sal || ''}" placeholder="0.00" style="text-align:right"></td>
-    <td class="num"><input data-e="${i}" data-k="ret" type="number" step="0.01" min="0" value="${e.ret || ''}" placeholder="0.00" style="text-align:right"></td>
-    <td><button type="button" class="btn small danger" data-delemp="${i}" aria-label="Quitar empleador">×</button></td></tr>`).join('');
-}
-$('#rtEmpBody').addEventListener('input', e => { const el = e.target; if (el.dataset.e == null) return; const x = RT_EMP[+el.dataset.e]; x[el.dataset.k] = el.dataset.k === 'n' ? el.value : (parseFloat(el.value) || 0); rtCalc(); });
-$('#rtEmpBody').addEventListener('click', e => { const d = e.target.dataset.delemp; if (d != null){ RT_EMP.splice(+d, 1); if (!RT_EMP.length) RT_EMP = [rtEmpVacio()]; rtRenderEmp(); rtCalc(); } });
-$('#rtAddEmp').addEventListener('click', () => { RT_EMP.push(rtEmpVacio()); rtRenderEmp(); });
-['#rtNombre','#rtCed','#rtHon','#rtOtros','#rtGastos','#rtHip','#rtEdu','#rtMed','#rtSeg','#rtEscN','#rtEsc','#rtJub','#rtDon','#rtEstPag'].forEach(id => $(id).addEventListener('input', rtCalc));
-$('#rtTipo').addEventListener('change', () => { rtTipoUI(); rtCalc(); });
+/* Casillas: n, sección, nombre, si se escribe (in) o se calcula (auto), y la explicación */
+const RT_LIN = [
+  { s: 'Ingresos' },
+  { n: 1, t: 'Salarios y otras remuneraciones con retención', in: true, a: 'Escriba el total del año de los salarios y demás remuneraciones a las que el empleador le retuvo ISR, de todos sus empleadores. Sale del certificado de salarios que entrega cada empleador. Incluya los 13 pagos del año (12 meses y el décimo tercer mes).' },
+  { n: 2, t: 'Otras remuneraciones personales sin retención', in: true, a: 'Escriba otras remuneraciones que le pagó el empleador sin retenerle ISR. Ojo: este monto forma la base del seguro educativo (casilla 34).' },
+  { n: 3, t: 'Ingresos en especies', in: true, a: 'Escriba el valor de lo que el empleador le dio en especie (por ejemplo, vivienda o auto) en lugar de dinero.' },
+  { n: 4, t: 'Gastos de representación', in: true, a: 'Escriba los gastos de representación y demás asignaciones fijas no reembolsables que le pagó el empleador (Código Fiscal, art. 709, numeral 8). Tienen su propio impuesto (casilla 28) y se restan en la casilla 7.' },
+  { n: 5, t: 'Dietas', in: true, a: 'Escriba lo que le pagaron por asistir a sesiones de consejos o juntas directivas.' },
+  { s: 'Ingresos por salarios / ingresos por actividad' },
+  { n: 6, t: 'Total de ingresos', f: 'Suma de las casillas 1 a la 5.', a: 'Se calcula sola: suma de las casillas 1 a la 5.' },
+  { n: 7, t: 'Gastos de representación', f: 'Igual a la casilla 4.', a: 'Se calcula sola con el valor de la casilla 4. Se resta porque los gastos de representación pagan su impuesto aparte (casilla 28).' },
+  { n: 8, t: 'Total de ingresos gravables', f: 'Casilla 6 menos casilla 7.', a: 'Se calcula sola: total de ingresos (6) menos gastos de representación (7).' },
+  { s: 'Gastos' },
+  { n: 9, t: 'Donaciones al Estado', in: true, a: 'Donaciones hechas al Estado (D. E. 143 de 2005, art. 16, literal a). Se detallan en el anexo de donaciones.' },
+  { n: 10, t: 'Donaciones (literal c y e del Art. 16, D. E. 143 de 2005)', in: true, a: 'Donaciones de los literales c y e del artículo 16 del D. E. 143 de 2005. Se detallan en el anexo de donaciones.' },
+  { n: 11, t: 'Donaciones (literal b, d y f del Art. 16, D. E. 143 de 2005)', in: true, tope: 50000, a: 'Donaciones a instituciones de beneficencia (literales b, d y f), hasta un máximo de B/.50,000. Si escribe más, solo se acepta el máximo.' },
+  { n: 12, t: 'Donaciones Ley 186-2020', in: true, a: 'Donaciones amparadas en la Ley 186 de 2020.' },
+  { n: 13, t: 'Gastos por ingresos en especies', in: true, a: 'Gastos relacionados con los ingresos en especie de la casilla 3.' },
+  { n: 14, t: 'Total de gastos', f: 'Suma de las casillas 9 a la 13.', a: 'Se calcula sola: suma de las casillas 9 a la 13.' },
+  { n: 15, t: 'Total de gastos deducibles', f: 'Igual a la casilla 14.', a: 'Se calcula sola. Un asalariado puro solo puede deducir donaciones y las deducciones personales (casillas 18 a 23).' },
+  { s: 'Renta gravable' },
+  { n: 16, t: 'Renta gravable', f: 'Casilla 8 menos casilla 15, si es positivo.', a: 'Se calcula sola: ingresos gravables (8) menos gastos deducibles (15), cuando el resultado es positivo.' },
+  { n: 17, t: 'Pérdida', f: 'Casilla 8 menos casilla 15, si es negativo.', a: 'Se calcula sola: aparece si los gastos deducibles superan los ingresos gravables.' },
+  { s: 'Menos: deducciones personales' },
+  { n: 18, t: 'Deducción básica', f: 'B/.800 si declara con su cónyuge.', a: 'Se calcula sola: B/.800 solo cuando los cónyuges presentan la declaración en forma conjunta (llene el nombre del cónyuge arriba). Código Fiscal, art. 709, numeral 2.' },
+  { n: 19, t: 'Gastos médicos', in: true, a: 'Gastos médicos hechos en Panamá por el contribuyente, debidamente comprobados con factura (art. 709, numeral 7). Se detallan en el anexo de gastos médicos. No tienen tope.' },
+  { n: 20, t: 'Intereses hipotecarios', in: true, tope: 15000, a: 'Intereses pagados por el préstamo hipotecario de la vivienda principal de uso propio, ubicada en Panamá. Máximo B/.15,000. No son deducibles los intereses de préstamos con interés preferencial.' },
+  { n: 21, t: 'Intereses préstamos educativos', in: true, a: 'Intereses de préstamos destinados solo a educación en Panamá, del contribuyente o de las personas que sostiene, incluidos los del IFARHU.' },
+  { n: 22, t: 'Gastos escolares', esc: true, a: 'Gastos escolares hechos en Panamá y comprobados (art. 709, numeral 9; Ley 37 de 2018). Se llena con el anexo: escriba cuántos dependientes y cuánto pagó. El tope es B/.3,600 por dependiente (DGI); la casilla toma lo menor.' },
+  { n: 23, t: 'Gastos escolares discapacitados', in: true, a: 'Gastos escolares de dependientes con discapacidad, comprobados. Se detallan en su anexo.' },
+  { s: 'Menos: arrastre de pérdidas e incentivos' },
+  { n: 24, t: 'Incentivo: fondo de jubilaciones', in: true, topeJub: true, a: 'Aportes a fondos de jubilación, pensiones y similares. No puede pasar del 10 % del ingreso bruto anual ni de B/.15,000, lo que sea menor (Ley 10 de 1993, art. 6). Si escribe más, se acepta el máximo.' },
+  { s: 'Renta neta gravable' },
+  { n: 25, t: 'Renta neta gravable', f: 'Casilla 16 menos casillas 18 a 24, si es positivo.', a: 'Se calcula sola: renta gravable (16) menos las deducciones personales y el incentivo (18 a 24). A este monto se le aplica la tarifa.' },
+  { n: 26, t: 'Pérdida neta', f: 'Si el resultado anterior es negativo.', a: 'Se calcula sola cuando las deducciones superan la renta gravable.' },
+  { s: 'Liquidación del impuesto' },
+  { n: 27, t: 'Impuesto causado', f: 'Tarifa del art. 700 aplicada a la casilla 25.', a: 'Se calcula sola con la tarifa: 0 % hasta B/.11,000; 15 % del excedente hasta B/.50,000; B/.5,850 más 25 % del excedente de B/.50,000.' },
+  { n: 28, t: 'Impuesto por gasto de representación', f: '10 % hasta B/.25,000; B/.2,500 + 15 % del excedente.', a: 'Se calcula sola sobre la casilla 4: 10 % hasta B/.25,000; más de B/.25,000 paga B/.2,500 más 15 % del excedente (Ley 8 de 2010).' },
+  { n: 29, t: 'Retenciones de salarios', in: true, a: 'Escriba el ISR que le retuvieron sus empleadores en el año, según el certificado de salarios de cada uno (es lo que reportaron en las planillas). Si pide devolución, pida el certificado a su patrono.' },
+  { n: 30, t: 'Crédito declaración anterior', f: 'Lo trae el sistema.', a: 'El formulario lo carga solo con el crédito de su declaración del año anterior. No se puede modificar. En la práctica está en cero.' },
+  { n: 31, t: 'Retención del gasto de representación', in: true, a: 'Escriba el ISR que el empleador le retuvo sobre los gastos de representación.' },
+  { n: 32, t: 'Impuesto a pagar', f: '27 + 28 − 29 − 30 − 31, si es positivo.', a: 'Se calcula sola: impuesto causado (27) más el de gasto de representación (28), menos las retenciones y créditos (29, 30 y 31), cuando el resultado es positivo.' },
+  { n: 33, t: 'Impuesto a favor', f: 'El mismo cálculo, si es negativo.', a: 'Se calcula sola cuando lo retenido supera el impuesto: es el saldo a favor, que se usa como crédito o se pide en devolución.' },
+  { s: 'Seguro educativo' },
+  { n: 34, t: 'Base del cálculo seguro educativo', f: 'Casilla 6 − (1, 3, 4 y 5) − casilla 15.', a: 'Se calcula sola: total de ingresos menos los salarios con retención, ingresos en especie, gastos de representación y dietas, menos los gastos deducibles. En el asalariado puro casi siempre es cero (el seguro educativo ya se lo descuenta el empleador).' },
+  { n: 35, t: 'Seguro educativo a pagar', f: '2.75 % de la casilla 34 (1.25 % embajadas).', a: 'Se calcula sola: 2.75 % de la base (1.25 % si es empleado de embajada). Se puede pagar de una vez o en tres partidas: 30 de junio, 30 de septiembre y 31 de diciembre.' },
+  { n: '35a', t: '1ra. partida seguro educativo', f: 'Casilla 35 ÷ 3.', a: 'Se calcula sola: la tercera parte del seguro educativo, a más tardar el 30 de junio.' },
+  { n: '35b', t: '2da. partida seguro educativo', f: 'Casilla 35 ÷ 3.', a: 'Se calcula sola: a más tardar el 30 de septiembre.' },
+  { n: '35c', t: '3ra. partida seguro educativo', f: 'Casilla 35 ÷ 3.', a: 'Se calcula sola: a más tardar el 31 de diciembre.' },
+  { s: 'Liquidación final del impuesto' },
+  { n: 36, t: 'Impuesto jurado a pagar', f: 'Igual a la casilla 32.', a: 'Se calcula sola con el valor de la casilla 32. Se paga a más tardar el 31 de marzo (código 101 en la boleta de pago).' },
+  { n: 37, t: 'Impuesto jurado a favor', f: 'Igual a la casilla 33.', a: 'Se calcula sola con el valor de la casilla 33.' }
+];
 
-function rtTipoUI(){
-  const t = $('#rtTipo').value;
-  $('#rtSalCard').classList.toggle('hidden', t === 'I');
-  $('#rtIndCard').classList.toggle('hidden', t === 'A');
-  $('#rtTipoHint').textContent = {
-    A: 'Asalariado: su única fuente de ingreso es el salario. Si tiene un solo empleador que le retiene el ISR, no está obligado a declarar, pero le conviene hacerlo si tiene deducciones (puede recuperar dinero). Si tuvo dos o más empleadores en el año, debe declarar.',
-    I: 'Independiente: profesional o comerciante que cobra honorarios o vende. Declara cada año y además paga impuesto estimado en tres cuotas.',
-    M: 'Mixto: tiene salario y además ingresos propios (honorarios, alquileres). Declara todo junto.'
-  }[t];
+const RT_CASOS = [
+  { id: 'a1', auto: true, titulo: 'Ejemplo resuelto · Marta, asalariada que recupera dinero',
+    texto: 'Marta Ejemplo (cédula 8-333-3333, DV 45, nacida el 10/05/1990) gana B/.2,000 al mes en una sola empresa: B/.26,000 en el año con el XIII mes. Su empleador le retuvo B/.2,250 de ISR. Pagó B/.4,000 de colegiatura y útiles de su único hijo. No tiene otros ingresos ni declara con su cónyuge.',
+    pista: 'Casilla 1: 26,000 → 6 y 8: 26,000 → 16: 26,000. Casilla 22 (anexo): 1 dependiente, pagó 4,000, se acepta el tope de 3,600. Casilla 25: 26,000 − 3,600 = 22,400. Casilla 27: (22,400 − 11,000) × 15 % = 1,710. Casilla 29: 2,250. Casilla 33 (a favor): 2,250 − 1,710 = 540. Seguro educativo: base cero, porque todo su ingreso es salario con retención.',
+    entrada: { cab: { ruc: '8-333-3333', dv: '45', nombre: 'Marta Ejemplo', nac: '10/05/1990' }, v: { 1: 26000, 29: 2250, escDep: 1, escPag: 4000 } },
+    esperado: { rng: 22400, imp: 1710, neto: -540 } },
+  { id: 'a2', titulo: 'Caso para la clase · Pedro, asalariado con dos empleadores',
+    texto: 'Pedro Práctica (cédula 8-555-5555, DV 20, nacido el 03/09/1985) trabajó todo 2026 en dos empresas. En Comercial Uno, S.A. ganó B/.1,800 al mes (B/.23,400 en el año con el XIII mes) y le retuvieron B/.1,860 de ISR. Por las tardes trabajó en Servicios Dos, S.A.: B/.700 al mes (B/.9,100 en el año), y como ese salario solo no llega a B/.11,000, no le retuvieron nada. Pagó B/.1,200 en gastos médicos con factura y B/.6,000 de intereses de la hipoteca de su casa. No declara con su cónyuge.',
+    pista: 'Casilla 1: 23,400 + 9,100 = 32,500. Casilla 19: 1,200. Casilla 20: 6,000. Casilla 25: 32,500 − 7,200 = 25,300. Casilla 27: (25,300 − 11,000) × 15 % = 2,145. Casilla 29: 1,860. Casilla 32 (a pagar): 2,145 − 1,860 = 285. Lección: cada empleador retiene como si fuera el único trabajo; al sumar los salarios falta impuesto, por eso Pedro debe declarar.',
+    entrada: null,
+    esperado: { rng: 25300, imp: 2145, neto: 285 } }
+];
+
+/* Construcción del formulario */
+function rtInput(n){ return `<input id="rt_${n}" type="number" step="0.01" min="0" placeholder="0.00" style="text-align:right">`; }
+function rtRender(){
+  $('#rtCab').innerHTML = RT_CAB.map(c => {
+    let ctl;
+    if (c.fijo) ctl = `<input id="rtc_${c.id}" value="${esc(c.fijo)}" disabled>`;
+    else if (c.opts) ctl = `<select id="rtc_${c.id}">${c.opts.map(o => `<option>${esc(o)}</option>`).join('')}</select>`;
+    else if (c.check) ctl = `<input id="rtc_${c.id}" type="checkbox" style="width:auto">`;
+    else ctl = `<input id="rtc_${c.id}" placeholder="${esc(c.ph || '')}">`;
+    return `<div><label>${esc(c.label)} <button type="button" class="rti" data-ayc="${c.id}" aria-label="Ayuda">i</button></label>${ctl}<div class="rtayuda hidden" id="ayc_${c.id}">${esc(c.ayuda)}</div></div>`;
+  }).join('');
+  $('#rtBody').innerHTML = RT_LIN.map(l => {
+    if (l.s) return `<tr class="rtsec"><td colspan="4">${esc(l.s)}</td></tr>`;
+    const auto = !l.in && !l.esc;
+    let ctl;
+    if (l.esc) ctl = `<div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:nowrap"><span class="hint">Dep.</span><input id="rt_escDep" type="number" min="0" step="1" value="0" style="width:60px"><span class="hint">Pagó</span><input id="rt_escPag" type="number" min="0" step="0.01" placeholder="0.00" style="width:110px;text-align:right"></div><input id="rt_22" class="rtauto" disabled style="margin-top:4px;text-align:right">`;
+    else if (auto) ctl = `<input id="rt_${l.n}" class="rtauto" disabled style="text-align:right">`;
+    else ctl = rtInput(l.n);
+    return `<tr class="${auto ? 'rtrow-auto' : ''}"><td class="rtlab">${esc(l.t)}${auto ? ' <span class="pill info" style="font-size:10.5px">se calcula solo</span>' : ''}</td><td class="rtnum">${String(l.n).replace(/[abc]$/, '')}</td><td style="width:34px"><button type="button" class="rti" data-ayl="${l.n}" aria-label="Ayuda de la casilla ${l.n}">i</button></td><td style="width:260px">${ctl}<div class="hint" id="rtw_${l.n}"></div></td></tr>
+      <tr class="rtayuda-row hidden" id="ayl_${l.n}"><td colspan="4"><div class="rtayuda"><b>Casilla ${String(l.n).replace(/[abc]$/, '')} · ${esc(l.t)}.</b> ${esc(l.a)}${l.f ? `<br><span class="hint">Cálculo: ${esc(l.f)}</span>` : ''}</div></td></tr>`;
+  }).join('');
 }
-const num = id => Math.max(0, parseFloat($(id).value) || 0);
+const rv = id => { const el = $('#rt_' + id); return el ? Math.max(0, parseFloat(el.value) || 0) : 0; };
 function rtLeer(){
-  return { tipo: $('#rtTipo').value, nombre: $('#rtNombre').value.trim(), ced: $('#rtCed').value.trim(),
-    emp: RT_EMP.map(e => ({ ...e })), hon: num('#rtHon'), otros: num('#rtOtros'), gastos: num('#rtGastos'),
-    ded: { hip: num('#rtHip'), edu: num('#rtEdu'), med: num('#rtMed'), seg: num('#rtSeg'), escN: Math.floor(num('#rtEscN')), esc: num('#rtEsc'), jub: num('#rtJub'), don: num('#rtDon') },
-    estPag: num('#rtEstPag') };
+  const cab = {}; RT_CAB.forEach(c => { const el = $('#rtc_' + c.id); cab[c.id] = c.check ? el.checked : el.value.trim(); });
+  const v = {}; RT_LIN.forEach(l => { if (l.in) v[l.n] = rv(l.n); }); v.escDep = Math.floor(rv('escDep')); v.escPag = rv('escPag');
+  return { cab, v };
 }
-function rtResultado(d){
-  const t = d.tipo;
-  const sal = t === 'I' ? 0 : r2(d.emp.reduce((s, e) => s + (e.sal || 0), 0));
-  const ret = t === 'I' ? 0 : r2(d.emp.reduce((s, e) => s + (e.ret || 0), 0));
-  const ingInd = t === 'A' ? 0 : r2(d.hon + d.otros);
-  const gastos = t === 'A' ? 0 : Math.min(d.gastos, ingInd);
-  const bruto = r2(sal + ingInd);
-  const rentaNeta = r2(sal + ingInd - gastos);
-  const k = d.ded;
-  const D = { hip: Math.min(k.hip, 15000), edu: k.edu, med: k.med, seg: k.seg, esc: Math.min(k.esc, 3600 * k.escN), jub: Math.min(k.jub, Math.min(bruto * 0.10, 15000)), don: Math.min(k.don, 50000) };
-  const totDed = r2(Object.values(D).reduce((s, v) => s + v, 0));
-  const rng = r2(Math.max(0, rentaNeta - totDed));
-  const imp = tarifaISR(rng);
-  const creditos = r2(ret + d.estPag);
-  const neto = r2(imp - creditos);
-  const estimada = t === 'A' ? 0 : r2(Math.max(0, imp - ret));
-  return { sal, ret, ingInd, gastos, bruto, rentaNeta, D, totDed, rng, imp, creditos, neto, estimada };
+function rtResolver(d){
+  const v = d.v, c = d.cab, L = {};
+  [1,2,3,4,5,9,10,12,13,19,21,23,29,31].forEach(n => L[n] = v[n] || 0);
+  L[6] = r2(L[1] + L[2] + L[3] + L[4] + L[5]);
+  L[7] = L[4];
+  L[8] = r2(L[6] - L[7]);
+  L[11] = Math.min(v[11] || 0, 50000);
+  L[14] = r2(L[9] + L[10] + L[11] + L[12] + L[13]);
+  L[15] = L[14];
+  const dif = r2(L[8] - L[15]); L[16] = Math.max(dif, 0); L[17] = Math.max(-dif, 0);
+  L[18] = c.conyuge ? 800 : 0;
+  L[20] = Math.min(v[20] || 0, 15000);
+  L[22] = Math.min(v.escPag || 0, 3600 * (v.escDep || 0));
+  L[24] = Math.min(v[24] || 0, Math.min(r2(L[6] * 0.10), 15000));
+  const ded = r2(L[18] + L[19] + L[20] + L[21] + L[22] + L[23] + L[24]);
+  const neta = r2(L[16] - L[17] - ded); L[25] = Math.max(neta, 0); L[26] = Math.max(-neta, 0);
+  L[27] = tarifaISR(L[25]);
+  L[28] = L[4] <= 25000 ? r2(L[4] * 0.10) : r2(2500 + (L[4] - 25000) * 0.15);
+  L[30] = 0;
+  const liq = r2(L[27] + L[28] - L[29] - L[30] - L[31]); L[32] = Math.max(liq, 0); L[33] = Math.max(-liq, 0);
+  L[34] = Math.max(0, r2(L[6] - L[1] - L[3] - L[4] - L[5] - L[15]));
+  L[35] = r2(L[34] * (c.embajada ? 0.0125 : 0.0275));
+  L['35a'] = L['35b'] = L['35c'] = r2(L[35] / 3);
+  L[36] = L[32]; L[37] = L[33];
+  return L;
 }
 function rtCalc(){
-  const d = rtLeer(), r = rtResultado(d);
-  const ok = (id, pagado, acepta) => { $(id).innerHTML = pagado ? (acepta < pagado ? `<span style="color:var(--warn)">${money(acepta)}</span>` : money(acepta)) : '—'; };
-  ok('#rtHipOk', d.ded.hip, r.D.hip); ok('#rtEduOk', d.ded.edu, r.D.edu); ok('#rtMedOk', d.ded.med, r.D.med); ok('#rtSegOk', d.ded.seg, r.D.seg);
-  ok('#rtEscOk', d.ded.esc, r.D.esc); ok('#rtJubOk', d.ded.jub, r.D.jub); ok('#rtDonOk', d.ded.don, r.D.don);
-  const fila = (a, b, cls = '') => `<div class="${cls}"><span>${a}</span><span>${b}</span></div>`;
-  $('#rtTot').innerHTML =
-    (d.tipo !== 'I' ? fila('Salarios del año', money(r.sal)) : '') +
-    (d.tipo !== 'A' ? fila('Ingresos como independiente', money(r.ingInd)) + fila('Menos costos y gastos del negocio', '−' + money(r.gastos)) : '') +
-    fila('<b>Renta neta</b>', '<b>' + money(r.rentaNeta) + '</b>') +
-    fila('Menos deducciones personales', '−' + money(r.totDed)) +
-    fila('<b>Renta neta gravable</b>', '<b>' + money(r.rng) + '</b>') +
-    fila('Impuesto causado (según la tarifa)', money(r.imp)) +
-    fila('Menos ISR retenido por empleadores', '−' + money(r.ret)) +
-    fila('Menos impuesto estimado pagado', '−' + money(d.estPag)) +
-    (r.neto >= 0 ? fila('Impuesto a pagar', money(r.neto), 'grand') : fila('Saldo a favor (crédito o devolución)', money(-r.neto), 'grand')) +
-    (d.tipo !== 'A' ? fila('Estimada para 2027 (3 cuotas de ' + money(r.estimada / 3) + ')', money(r.estimada)) : '');
-  $('#rtTarifa').innerHTML = `<div class="msg ok" style="color:var(--ink)"><b>Cómo se calculó el impuesto:</b> ${tarifaTexto(r.rng)}<br><span class="hint">Tarifa: 0 % hasta B/.11,000 · 15 % del excedente hasta B/.50,000 · B/.5,850 + 25 % del excedente de B/.50,000.${r.neto >= 0 ? ' Se presenta antes del 15 de marzo de 2027 y se paga hasta el 31 de marzo.' : ' El saldo a favor se puede usar como crédito o pedir en devolución.'}</span></div>`;
-  return r;
+  const d = rtLeer(), L = rtResolver(d);
+  RT_LIN.forEach(l => { if (l.n != null && !l.in){ const el = $('#rt_' + l.n); if (el) el.value = (L[l.n] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } });
+  const aviso = (n, txt) => { const w = $('#rtw_' + n); if (w) w.innerHTML = txt ? `<span style="color:var(--warn)">${txt}</span>` : ''; };
+  aviso(11, (d.v[11] || 0) > 50000 ? 'Se acepta hasta B/.50,000.' : '');
+  aviso(20, (d.v[20] || 0) > 15000 ? 'Se acepta hasta B/.15,000.' : '');
+  aviso(22, d.v.escPag > L[22] ? `Se acepta ${money(L[22])} (B/.3,600 por dependiente).` : '');
+  aviso(24, (d.v[24] || 0) > L[24] ? `Se acepta ${money(L[24])} (10 % del ingreso o B/.15,000).` : '');
+  return L;
 }
+$('#rtBody').addEventListener('input', rtCalc);
+$('#rtCab').addEventListener('input', rtCalc);
+$('#rtCab').addEventListener('change', rtCalc);
+document.addEventListener('click', e => {
+  const l = e.target.dataset && e.target.dataset.ayl, c = e.target.dataset && e.target.dataset.ayc;
+  if (l != null) $('#ayl_' + l).classList.toggle('hidden');
+  if (c != null) $('#ayc_' + c).classList.toggle('hidden');
+});
+$('#rtVerAyuda').addEventListener('change', e => { $$('.rtayuda-row, #rtCab .rtayuda').forEach(x => x.classList.toggle('hidden', !e.target.checked)); });
 
 /* Casos */
 function rtCasoActivo(){ return RT_CASOS.find(c => c.id === RT_CASO) || null; }
@@ -1420,65 +1447,66 @@ function rtRenderBar(){
   $('#rtToggle').classList.toggle('hidden', !c);
   $('#rtToggle').textContent = RT_OCULTO ? 'Ver enunciado' : 'Ocultar enunciado';
   $('#rtCasoTxt').classList.toggle('hidden', RT_OCULTO);
-  $('#rtCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px">${esc(c.texto)}</div><div class="row" style="margin-top:6px">${c.auto ? '<button class="btn small" type="button" id="rtAuto">Llenar el ejemplo automáticamente</button>' : ''}<button class="btn small secondary" type="button" id="rtPista">${c.auto ? 'Ver la explicación' : 'Ver pista'}</button><span class="hint">${c.auto ? 'Este ejemplo se llena solo para verlo paso a paso.' : 'Llene la declaración y pulse «Revisar caso».'}</span></div><div id="rtPistaTxt"></div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena la declaración.</span>';
+  let botones = '';
+  if (c && c.auto) botones = '<button class="btn small" type="button" id="rtAuto">Llenar el ejemplo automáticamente</button><button class="btn small secondary" type="button" id="rtPista">Ver la explicación</button>';
+  else if (c && IS_TEACHER) botones = '<button class="btn small secondary" type="button" id="rtPista">Ver solución (solo facilitador)</button>';
+  $('#rtCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px">${esc(c.texto)}</div><div class="row" style="margin-top:6px">${botones}<span class="hint">${c.auto ? 'Este ejemplo se llena solo para verlo casilla por casilla.' : 'Llene la declaración y pulse «Revisar caso».'}</span></div><div id="rtPistaTxt"></div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena la declaración.</span>';
 }
 $('#rtCasoSel').addEventListener('change', e => { RT_CASO = e.target.value; RT_OCULTO = false; rtLimpiar(); rtRenderBar(); });
 $('#rtToggle').addEventListener('click', () => { RT_OCULTO = !RT_OCULTO; rtRenderBar(); });
-$('#rtCasoTxt').addEventListener('click', e => { if (e.target.id === 'rtAuto'){ const c = rtCasoActivo(); rtCargar(c.entrada); $('#rtRevisar').click(); $('#rtPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px">💡 ${esc(c.pista)}</div>`; return; } if (e.target.id === 'rtPista'){ const c = rtCasoActivo(); $('#rtPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px">💡 ${esc(c.pista)}</div>`; } });
+$('#rtCasoTxt').addEventListener('click', e => {
+  const c = rtCasoActivo(); if (!c) return;
+  if (e.target.id === 'rtAuto'){ rtCargar(c.entrada); $('#rtRevisar').click(); }
+  if (e.target.id === 'rtAuto' || e.target.id === 'rtPista'){ if (c.auto || IS_TEACHER) $('#rtPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px">💡 ${esc(c.pista)}</div>`; }
+});
+function rtRes(L){ return { rng: L[25], imp: L[27], neto: r2(L[32] - L[33]) }; }
 function rtCumple(c, r){ const e = c.esperado; return near(r.rng, e.rng) && near(r.imp, e.imp) && near(r.neto, e.neto); }
 $('#rtRevisar').addEventListener('click', () => {
-  const c = rtCasoActivo(); const r = rtCalc();
+  const c = rtCasoActivo(); const r = rtRes(rtCalc());
   if (!c) return errMsg('#rtMsgs', 'Elija primero un caso arriba, en «¿Qué caso está resolviendo?».');
   const e = c.esperado; const m = [];
-  m.push(near(r.rng, e.rng) ? '✓ Renta neta gravable correcta.' : '✗ La renta neta gravable no coincide. Revise ingresos, gastos y los topes de las deducciones.');
-  m.push(near(r.imp, e.imp) ? '✓ Impuesto causado correcto.' : '✗ El impuesto causado no coincide.');
-  m.push(near(r.neto, e.neto) ? '✓ Resultado final correcto (' + (e.neto >= 0 ? 'a pagar ' + money(e.neto) : 'saldo a favor ' + money(-e.neto)) + ').' : '✗ El resultado final no coincide. Revise el ISR retenido y el estimado pagado.');
-  $('#rtMsgs').innerHTML = `<div class="msg ${rtCumple(c, r) ? 'ok' : 'warn'}">${m.join('<br>')}${rtCumple(c, r) ? '<br><b>¡Caso resuelto!</b> Pulse «Guardar declaración» para que quede registrado.' : ''}</div>`;
+  m.push(near(r.rng, e.rng) ? '✓ Casilla 25, renta neta gravable: correcta.' : '✗ Casilla 25, renta neta gravable: no coincide. Revise los ingresos (1 a 5) y las deducciones (18 a 24).');
+  m.push(near(r.imp, e.imp) ? '✓ Casilla 27, impuesto causado: correcto.' : '✗ Casilla 27, impuesto causado: no coincide.');
+  m.push(near(r.neto, e.neto) ? '✓ Casillas 32 y 33, resultado final: correcto.' : '✗ Casillas 32 y 33, resultado final: no coincide. Revise las retenciones (29).');
+  const ok = rtCumple(c, r);
+  $('#rtMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b> Pulse «Guardar declaración» para que quede registrado.' : ''}</div>`;
 });
 $('#rtGuardar').addEventListener('click', async () => {
-  const d = rtLeer(); const r = rtCalc(); const c = rtCasoActivo();
-  if (!r.rentaNeta) return errMsg('#rtMsgs', 'La declaración está vacía. Escriba al menos un ingreso.');
-  const data = { clase: 'renta', caso: c ? c.id : '', titulo: c ? c.titulo : 'Práctica libre', entrada: d, res: { rng: r.rng, imp: r.imp, neto: r.neto, estimada: r.estimada }, cumple: c ? rtCumple(c, r) : null, fecha: new Date().toISOString() };
+  const d = rtLeer(); const L = rtCalc(); const r = rtRes(L); const c = rtCasoActivo();
+  if (!L[6]) return errMsg('#rtMsgs', 'La declaración está vacía. Escriba al menos los salarios (casilla 1).');
+  const data = { clase: 'renta', formulario: 'asalariado', caso: c ? c.id : '', titulo: c ? c.titulo : 'Práctica libre', entrada: d, res: r, cumple: c ? rtCumple(c, r) : null, fecha: new Date().toISOString() };
   try {
     const row = await busy($('#rtGuardar'), () => api.insert('documentos', { data }));
     RENTAS.unshift({ ...data, dbid: row.id }); rtRenderLista();
-    okMsg('#rtMsgs', 'Declaración guardada' + (c ? (data.cumple ? ': caso resuelto.' : ': todavía no cumple el caso, puede corregir y guardar otra.') : '.'));
+    okMsg('#rtMsgs', 'Declaración guardada' + (c ? (data.cumple ? ': caso resuelto.' : ': todavía no cumple el caso; puede corregir y guardar otra.') : '.'));
   } catch(err){ errMsg('#rtMsgs', 'No se pudo guardar: ' + errText(err)); }
 });
 function rtLimpiar(){
-  ['#rtNombre','#rtCed','#rtHon','#rtOtros','#rtGastos','#rtHip','#rtEdu','#rtMed','#rtSeg','#rtEsc','#rtJub','#rtDon','#rtEstPag'].forEach(id => $(id).value = '');
-  $('#rtEscN').value = '0'; $('#rtTipo').value = 'A';
-  RT_EMP = [rtEmpVacio()]; rtRenderEmp(); rtTipoUI(); rtCalc(); $('#rtMsgs').innerHTML = '';
+  RT_CAB.forEach(c => { const el = $('#rtc_' + c.id); if (!el || c.fijo) return; if (c.check) el.checked = false; else if (c.opts) el.selectedIndex = 0; else el.value = ''; });
+  $$('#rtBody input:not([disabled])').forEach(el => { el.value = el.id === 'rt_escDep' ? '0' : ''; });
+  rtCalc(); $('#rtMsgs').innerHTML = '';
 }
 $('#rtLimpiar').addEventListener('click', rtLimpiar);
-function rtRenderLista(){
-  $('#rtVacio').classList.toggle('hidden', RENTAS.length > 0);
-  $('#rtLista').innerHTML = RENTAS.map((x, i) => `<tr><td>${fdate(x.fecha)}</td><td>${esc(x.titulo)}${x.cumple === true ? ' <span class="pill ok">✓</span>' : x.cumple === false ? ' <span class="pill err">✗</span>' : ''}</td><td>${esc(RT_TIPO[x.entrada.tipo] || '')}</td>
-    <td class="num">${money(x.res.rng)}</td><td class="num">${money(x.res.imp)}</td><td class="num">${x.res.neto >= 0 ? 'Paga ' + money(x.res.neto) : 'A favor ' + money(-x.res.neto)}</td>
-    <td><button class="btn small secondary" data-rtver="${i}">Abrir</button></td></tr>`).join('');
-}
 function rtCargar(d){
-  $('#rtTipo').value = d.tipo; $('#rtNombre').value = d.nombre || ''; $('#rtCed').value = d.ced || '';
-  RT_EMP = d.emp && d.emp.length ? d.emp.map(e => ({ ...e })) : [rtEmpVacio()]; rtRenderEmp();
-  const set = (id, v) => { $(id).value = v || ''; };
-  set('#rtHon', d.hon); set('#rtOtros', d.otros); set('#rtGastos', d.gastos); set('#rtEstPag', d.estPag);
-  set('#rtHip', d.ded.hip); set('#rtEdu', d.ded.edu); set('#rtMed', d.ded.med); set('#rtSeg', d.ded.seg); $('#rtEscN').value = d.ded.escN || 0; set('#rtEsc', d.ded.esc); set('#rtJub', d.ded.jub); set('#rtDon', d.ded.don);
-  rtTipoUI(); rtCalc();
+  if (!d) return;
+  rtLimpiar();
+  Object.entries(d.cab || {}).forEach(([k, val]) => { const el = $('#rtc_' + k); if (!el) return; if (el.type === 'checkbox') el.checked = !!val; else if (!el.disabled) el.value = val; });
+  Object.entries(d.v || {}).forEach(([k, val]) => { const el = $('#rt_' + k); if (el && !el.disabled) el.value = val || (k === 'escDep' ? '0' : ''); });
+  rtCalc();
+}
+function rtRenderLista(){
+  const lista = RENTAS.filter(x => x.formulario === 'asalariado');
+  $('#rtVacio').classList.toggle('hidden', lista.length > 0);
+  $('#rtLista').innerHTML = lista.map(x => `<tr><td>${fdate(x.fecha)}</td><td>${esc(x.titulo)}${x.cumple === true ? ' <span class="pill ok">✓</span>' : x.cumple === false ? ' <span class="pill err">✗</span>' : ''}</td>
+    <td class="num">${money(x.res.rng)}</td><td class="num">${money(x.res.imp)}</td><td class="num">${x.res.neto >= 0 ? 'Paga ' + money(x.res.neto) : 'A favor ' + money(-x.res.neto)}</td>
+    <td><button class="btn small secondary" data-rtver="${RENTAS.indexOf(x)}">Abrir</button></td></tr>`).join('');
 }
 $('#rtLista').addEventListener('click', e => {
   const i = e.target.dataset.rtver; if (i == null) return;
-  const x = RENTAS[+i], d = x.entrada;
-  RT_CASO = x.caso || ''; RT_OCULTO = false; rtRenderBar();
-  rtCargar(d); window.scrollTo(0, 0);
-  return;
-  $('#rtTipo').value = d.tipo; $('#rtNombre').value = d.nombre || ''; $('#rtCed').value = d.ced || '';
-  RT_EMP = d.emp && d.emp.length ? d.emp.map(e => ({ ...e })) : [rtEmpVacio()]; rtRenderEmp();
-  const set = (id, v) => { $(id).value = v || ''; };
-  set('#rtHon', d.hon); set('#rtOtros', d.otros); set('#rtGastos', d.gastos); set('#rtEstPag', d.estPag);
-  set('#rtHip', d.ded.hip); set('#rtEdu', d.ded.edu); set('#rtMed', d.ded.med); set('#rtSeg', d.ded.seg); $('#rtEscN').value = d.ded.escN || 0; set('#rtEsc', d.ded.esc); set('#rtJub', d.ded.jub); set('#rtDon', d.ded.don);
-  rtTipoUI(); rtCalc(); window.scrollTo(0, 0);
+  const x = RENTAS[+i]; RT_CASO = x.caso || ''; RT_OCULTO = false; rtRenderBar(); rtCargar(x.entrada); window.scrollTo(0, 0);
 });
-function renderRenta(){ if (!RT_EMP.length){ RT_EMP = [rtEmpVacio()]; rtRenderEmp(); rtTipoUI(); } rtRenderBar(); rtCalc(); rtRenderLista(); }
+let RT_LISTO = false;
+function renderRenta(){ if (!RT_LISTO){ rtRender(); RT_LISTO = true; } rtRenderBar(); rtCalc(); rtRenderLista(); }
 function rtCasosResueltos(lista){ return RT_CASOS.filter(c => lista.some(x => x.caso === c.id && x.res && rtCumple(c, x.res))).length; }
 
 /* ======== Tareas (estudiante) ======== */

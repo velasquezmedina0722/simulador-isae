@@ -193,8 +193,8 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
     <button data-tab="emitidos">Documentos emitidos</button>
     <button data-tab="casos">Casos de práctica</button>
     <button data-tab="evaluacion">Evaluación</button>
-    <button data-tab="tareas">Tareas</button>
-    <button data-tab="materiales">Materiales</button>
+    <button data-tab="tareas" class="hidden">Tareas</button>
+    <button data-tab="materiales" class="hidden">Materiales</button>
     <button data-tab="ayuda">Ayuda</button>
     <button data-tab="docente" class="hidden" id="tabDocente">Panel del facilitador</button>
   </nav>
@@ -493,7 +493,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
     <div data-view="docente" class="hidden">
       <div class="sub-nav" id="dcNav">
         <button data-dc="progreso" class="active">Progreso y notas</button>
-        <button data-dc="entregas">Entregas</button>
+        <button data-dc="entregas" class="hidden">Entregas</button>
         <button data-dc="publicar">Publicar</button>
         <button data-dc="acceso">Lista de clase</button>
       </div>
@@ -524,7 +524,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
           <div class="msgs" id="anMsg"></div>
           <h3>Anuncios publicados</h3><div id="anList"></div>
         </div>
-        <div class="card">
+        <div class="card hidden">
           <h2>Publicar una tarea</h2>
           <div class="grid">
             <div><label for="taTit">Título</label><input id="taTit"></div>
@@ -537,7 +537,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
           <div class="msgs" id="taMsg"></div>
           <h3>Tareas publicadas</h3><div id="taList"></div>
         </div>
-        <div class="card">
+        <div class="card hidden">
           <h2>Publicar un material</h2>
           <div class="grid">
             <div><label for="maTit">Título</label><input id="maTit" placeholder="Ej.: Presentación de la sesión 2"></div>
@@ -869,8 +869,7 @@ function renderInicio(){
   $('#miAvance').innerHTML = IS_TEACHER ? '<div class="hint">Use el <b>Panel del facilitador</b> para ver el avance del grupo.</div>' :
     `<div class="stat"><b>${STATE.docs.length}</b><span>documentos emitidos</span></div>
      <div class="stat"><b>${casos} / ${CASES.length}</b><span>casos de práctica resueltos</span></div>
-     <div class="stat"><b>${nota ? nota.nota + ' / 100' : '—'}</b><span>nota de la evaluación</span></div>
-     <div class="stat"><b>${entregadas} / ${TAREAS.length}</b><span>tareas entregadas</span></div>`;
+     <div class="stat"><b>${nota ? nota.nota + ' / 100' : '—'}</b><span>nota de la evaluación</span></div>`;
   $('#anunciosBox').innerHTML = ANUNCIOS.length ? ANUNCIOS.map(a => `<div class="ann"><h4>${esc(a.titulo)}</h4><div class="when">${fdate(a.creado)}</div><p>${esc(a.cuerpo || '')}</p></div>`).join('') : '<p class="hint">No hay anuncios.</p>';
 }
 
@@ -1326,22 +1325,15 @@ function tarifaTexto(r){
 }
 
 const RT_CASOS = [
-  { id: 'r1', titulo: 'Caso R1 · Asalariado con dos empleadores',
-    texto: 'Carlos Ejemplo (cédula 8-111-1111) trabajó todo 2026 en dos empresas. En Comercial Uno, S.A. ganó B/.1,500 al mes: B/.19,500 en el año con el XIII mes, y le retuvieron B/.1,275 de ISR. Por las noches trabajó en Servicios Dos, S.A.: B/.800 al mes, B/.10,400 en el año, sin retención. Pagó B/.600 en consultas médicas no cubiertas por su seguro. No pagó impuesto estimado.',
-    pista: 'Tipo: asalariado, con los dos empleadores. Salarios 19,500 + 10,400 = 29,900. Menos gastos médicos 600 = renta neta gravable 29,300. Impuesto: (29,300 − 11,000) × 15 % = 2,745. Menos lo retenido (1,275) = B/.1,470 a pagar. Cada empresa le retuvo como si fuera su único empleo; por eso, al sumar los dos salarios, le falta pagar.',
-    esperado: { rng: 29300, imp: 2745, neto: 1470 } },
-  { id: 'r2', titulo: 'Caso R2 · Contadora independiente',
-    texto: 'Lucía Práctica (cédula 4-222-2222) es contadora independiente. En 2026 facturó B/.48,000 en honorarios y tuvo B/.12,000 de gastos del negocio (alquiler de su oficina, internet y una asistente). Pagó B/.9,000 de intereses de la hipoteca de su casa y B/.4,000 de gastos escolares de sus 2 hijos. Durante 2026 pagó B/.1,500 de impuesto estimado.',
-    pista: 'Tipo: independiente. Renta neta 48,000 − 12,000 = 36,000. Deducciones: hipoteca 9,000 + escolares 4,000 (tope 7,200 para dos hijos: se acepta todo) = 13,000. Renta neta gravable 23,000. Impuesto (23,000 − 11,000) × 15 % = 1,800. Menos estimado pagado 1,500 = B/.300 a pagar. La estimada para 2027 sería 1,800, en tres cuotas de B/.600.',
-    esperado: { rng: 23000, imp: 1800, neto: 300 } },
-  { id: 'r3', titulo: 'Caso R3 · Asalariada que recupera dinero',
+  { id: 'r3', auto: true, titulo: 'Ejemplo resuelto · Asalariada que recupera dinero',
     texto: 'Marta Ejemplo (cédula 8-333-3333) gana B/.2,000 al mes en una sola empresa: B/.26,000 en el año con el XIII mes. Su empleador le retuvo B/.2,250 de ISR. Pagó B/.4,000 de colegiatura y útiles de su único hijo. No tiene otros ingresos.',
     pista: 'Tipo: asalariado. Salario 26,000. Gastos escolares: pagó 4,000, pero el tope es 3,600 por dependiente. Renta neta gravable 26,000 − 3,600 = 22,400. Impuesto (22,400 − 11,000) × 15 % = 1,710. Le retuvieron 2,250: tiene un saldo a favor de B/.540. Por eso a un asalariado puro, aunque no esté obligado, le conviene declarar.',
+    entrada: { tipo: 'A', nombre: 'Marta Ejemplo', ced: '8-333-3333', emp: [{ n: 'Empresa Ejemplo, S.A.', sal: 26000, ret: 2250 }], hon: 0, otros: 0, gastos: 0, ded: { hip: 0, edu: 0, med: 0, seg: 0, escN: 1, esc: 4000, jub: 0, don: 0 }, estPag: 0 },
     esperado: { rng: 22400, imp: 1710, neto: -540 } },
-  { id: 'r4', titulo: 'Caso R4 · Gerente con ingresos extra (tramo del 25 %)',
-    texto: 'Roberto Práctica (cédula 8-444-4444) es gerente en una empresa: B/.4,500 al mes, B/.58,500 en el año con el XIII mes, y le retuvieron B/.7,975 de ISR. Además dio asesorías por B/.20,000 con B/.5,000 de gastos. Pagó B/.18,000 de intereses hipotecarios de su casa y aportó B/.3,000 a un fondo de jubilación privado. No pagó impuesto estimado.',
-    pista: 'Tipo: mixto. Renta neta 58,500 + (20,000 − 5,000) = 73,500. Deducciones: hipoteca 18,000, pero el tope es 15,000; jubilación 3,000 (dentro del 10 % del ingreso bruto). Total 18,000. Renta neta gravable 55,500. Impuesto 5,850 + (55,500 − 50,000) × 25 % = 7,225. Le retuvieron 7,975: saldo a favor de B/.750.',
-    esperado: { rng: 55500, imp: 7225, neto: -750 } }
+  { id: 'r2', titulo: 'Caso para la clase · Contadora independiente',
+    texto: 'Lucía Práctica (cédula 4-222-2222) es contadora independiente. En 2026 facturó B/.48,000 en honorarios y tuvo B/.12,000 de gastos del negocio (alquiler de su oficina, internet y una asistente). Pagó B/.9,000 de intereses de la hipoteca de su casa y B/.4,000 de gastos escolares de sus 2 hijos. Durante 2026 pagó B/.1,500 de impuesto estimado.',
+    pista: 'Tipo: independiente. Renta neta 48,000 − 12,000 = 36,000. Deducciones: hipoteca 9,000 + escolares 4,000 (tope 7,200 para dos hijos: se acepta todo) = 13,000. Renta neta gravable 23,000. Impuesto (23,000 − 11,000) × 15 % = 1,800. Menos estimado pagado 1,500 = B/.300 a pagar. La estimada para 2027 sería 1,800, en tres cuotas de B/.600.',
+    esperado: { rng: 23000, imp: 1800, neto: 300 } }
 ];
 
 /* Formulario */
@@ -1428,11 +1420,11 @@ function rtRenderBar(){
   $('#rtToggle').classList.toggle('hidden', !c);
   $('#rtToggle').textContent = RT_OCULTO ? 'Ver enunciado' : 'Ocultar enunciado';
   $('#rtCasoTxt').classList.toggle('hidden', RT_OCULTO);
-  $('#rtCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px">${esc(c.texto)}</div><div class="row" style="margin-top:6px"><button class="btn small secondary" type="button" id="rtPista">Ver pista</button><span class="hint">Llene la declaración y pulse «Revisar caso».</span></div><div id="rtPistaTxt"></div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena la declaración.</span>';
+  $('#rtCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px">${esc(c.texto)}</div><div class="row" style="margin-top:6px">${c.auto ? '<button class="btn small" type="button" id="rtAuto">Llenar el ejemplo automáticamente</button>' : ''}<button class="btn small secondary" type="button" id="rtPista">${c.auto ? 'Ver la explicación' : 'Ver pista'}</button><span class="hint">${c.auto ? 'Este ejemplo se llena solo para verlo paso a paso.' : 'Llene la declaración y pulse «Revisar caso».'}</span></div><div id="rtPistaTxt"></div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena la declaración.</span>';
 }
 $('#rtCasoSel').addEventListener('change', e => { RT_CASO = e.target.value; RT_OCULTO = false; rtLimpiar(); rtRenderBar(); });
 $('#rtToggle').addEventListener('click', () => { RT_OCULTO = !RT_OCULTO; rtRenderBar(); });
-$('#rtCasoTxt').addEventListener('click', e => { if (e.target.id === 'rtPista'){ const c = rtCasoActivo(); $('#rtPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px">💡 ${esc(c.pista)}</div>`; } });
+$('#rtCasoTxt').addEventListener('click', e => { if (e.target.id === 'rtAuto'){ const c = rtCasoActivo(); rtCargar(c.entrada); $('#rtRevisar').click(); $('#rtPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px">💡 ${esc(c.pista)}</div>`; return; } if (e.target.id === 'rtPista'){ const c = rtCasoActivo(); $('#rtPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px">💡 ${esc(c.pista)}</div>`; } });
 function rtCumple(c, r){ const e = c.esperado; return near(r.rng, e.rng) && near(r.imp, e.imp) && near(r.neto, e.neto); }
 $('#rtRevisar').addEventListener('click', () => {
   const c = rtCasoActivo(); const r = rtCalc();
@@ -1465,10 +1457,20 @@ function rtRenderLista(){
     <td class="num">${money(x.res.rng)}</td><td class="num">${money(x.res.imp)}</td><td class="num">${x.res.neto >= 0 ? 'Paga ' + money(x.res.neto) : 'A favor ' + money(-x.res.neto)}</td>
     <td><button class="btn small secondary" data-rtver="${i}">Abrir</button></td></tr>`).join('');
 }
+function rtCargar(d){
+  $('#rtTipo').value = d.tipo; $('#rtNombre').value = d.nombre || ''; $('#rtCed').value = d.ced || '';
+  RT_EMP = d.emp && d.emp.length ? d.emp.map(e => ({ ...e })) : [rtEmpVacio()]; rtRenderEmp();
+  const set = (id, v) => { $(id).value = v || ''; };
+  set('#rtHon', d.hon); set('#rtOtros', d.otros); set('#rtGastos', d.gastos); set('#rtEstPag', d.estPag);
+  set('#rtHip', d.ded.hip); set('#rtEdu', d.ded.edu); set('#rtMed', d.ded.med); set('#rtSeg', d.ded.seg); $('#rtEscN').value = d.ded.escN || 0; set('#rtEsc', d.ded.esc); set('#rtJub', d.ded.jub); set('#rtDon', d.ded.don);
+  rtTipoUI(); rtCalc();
+}
 $('#rtLista').addEventListener('click', e => {
   const i = e.target.dataset.rtver; if (i == null) return;
   const x = RENTAS[+i], d = x.entrada;
   RT_CASO = x.caso || ''; RT_OCULTO = false; rtRenderBar();
+  rtCargar(d); window.scrollTo(0, 0);
+  return;
   $('#rtTipo').value = d.tipo; $('#rtNombre').value = d.nombre || ''; $('#rtCed').value = d.ced || '';
   RT_EMP = d.emp && d.emp.length ? d.emp.map(e => ({ ...e })) : [rtEmpVacio()]; rtRenderEmp();
   const set = (id, v) => { $(id).value = v || ''; };

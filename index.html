@@ -397,6 +397,18 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <div class="tablewrap"><table><thead><tr><th>Fecha</th><th>Caso</th><th class="num">Renta neta gravable (25)</th><th class="num">Impuesto causado (27)</th><th class="num">Resultado</th><th></th></tr></thead><tbody id="rtLista"></tbody></table></div>
         <p class="hint" id="rtVacio">Todavía no ha guardado declaraciones.</p>
       </div>
+      <div class="overlay hidden" id="anxOverlay"><div class="ficha" style="max-width:1150px">
+        <div id="anxTit"></div>
+        <div class="grid" id="anxCab" style="margin-top:10px"></div>
+        <p class="hint" id="anxIntro" style="margin:10px 0 4px;text-align:justify"></p>
+        <div class="tablewrap"><table class="items"><thead id="anxHead"></thead><tbody id="anxBody"></tbody></table></div>
+        <div id="anxAyudas"></div>
+        <div class="row" style="margin-top:8px;align-items:flex-start">
+          <button class="btn small secondary" type="button" id="anxAdd">+ Agregar fila</button>
+          <div class="totals right" id="anxTot" style="min-width:300px"></div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="anxGuardar">Guardar anexo</button><button class="btn secondary" type="button" id="anxCancelar">Cancelar</button></div>
+      </div></div>
     </div>
 
     <!-- TAREAS -->
@@ -1269,6 +1281,97 @@ $('#btnNota').addEventListener('click', async () => {
   } catch(err){ errMsg('#notaBox', 'No se pudo guardar la nota: ' + errText(err)); }
 });
 
+/* ======== Anexos de la declaración (73 donaciones, 79 gastos médicos, 96 y 97 gastos escolares) ======== */
+const TP_AYUDA = 'NATURAL: una persona (por ejemplo, un médico independiente; RUC = su cédula). JURÍDICO: una sociedad o entidad con RUC (clínica, farmacia, colegio, fundación). EXTRANJERO: una persona o entidad sin RUC panameño.';
+const ANX = {
+  don: { cod: '73v1', titulo: 'Detalle de donaciones realizadas', casillas: 'casillas 9, 10, 11 y 12',
+    intro: 'Una fila por cada donación. El «Receptor» decide a qué casilla va: literal a → casilla 9; literales c y e → casilla 10; literales b, d y f → casilla 11 (tope B/.50,000); Ley 186-2020 → casilla 12. Guarde el comprobante de cada donación.',
+    cols: [
+      { k: 'tp', t: 'Tipo persona', opts: ['', 'NATURAL', 'JURÍDICO', 'EXTRANJERO'], a: 'Quién recibió la donación. ' + TP_AYUDA },
+      { k: 'ruc', t: 'RUC', a: 'RUC de la entidad que recibió la donación.' },
+      { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador del RUC de la entidad.' },
+      { k: 'nom', t: 'Nombre contribuyente', a: 'Nombre de la entidad que recibió la donación (no el suyo).' },
+      { k: 'res', t: 'No. Resolución', a: 'Número de la resolución que autoriza a la entidad a recibir donaciones deducibles. Pídasela a la entidad junto con el recibo.' },
+      { k: 'monto', t: 'Monto', num: true, a: 'Valor donado en balboas. Si fue en especie, el valor de lo entregado.' },
+      { k: 'tipo', t: 'Tipo de donación', opts: ['', 'EFECTIVO', 'ESPECIE'], a: 'EFECTIVO: dinero (incluye cheque o transferencia). ESPECIE: bienes (por ejemplo, computadoras o alimentos).' },
+      { k: 'rec', t: 'Receptor', opts: ['', 'LIT. A-ESTADO', 'LIT. B-EDUCATIVO-BENÉFICAS', 'LIT. C-PARTIDOS POLÍTICOS', 'LIT. D-ONGS', 'LIT. E-VIH', 'LIT. F-OTRAS ENTIDADES', 'LEY 186-2020'], a: 'Tipo de entidad según el artículo 16 del D. E. 143 de 2005. A: el Estado (casilla 9). B: instituciones educativas o de beneficencia; D: ONG; F: otras entidades (las tres van a la casilla 11, con tope de B/.50,000). C: partidos políticos; E: entidades de lucha contra el VIH (casilla 10). LEY 186-2020: donaciones amparadas en esa ley (casilla 12).' }
+    ],
+    totales(rows){
+      const s = f => r2(rows.filter(f).reduce((t, x) => t + (+x.monto || 0), 0));
+      const a = s(x => x.rec === 'LIT. A-ESTADO'), bdf = s(x => /LIT\. [BDF]-/.test(x.rec)), ce = s(x => /LIT\. [CE]-/.test(x.rec)), ley = s(x => x.rec === 'LEY 186-2020');
+      return { lineas: [['Literal a', a], ['Literal b, d, f', bdf], ['Literal c, e', ce], ['Ley 186-2020', ley]], casillas: { 9: a, 10: ce, 11: Math.min(bdf, 50000), 12: ley }, aviso: bdf > 50000 ? 'Literales b, d y f: pasan de B/.50,000; la casilla 11 toma el tope.' : '' };
+    } },
+  med: { cod: '79v1', titulo: 'Detalle de gastos médicos (solo para personas naturales)', casillas: 'casilla 19',
+    intro: 'Una fila por cada proveedor o factura de gastos médicos hechos en Panamá. Solo se deduce lo que usted pagó y el seguro no le devolvió. Cada monto debe tener su factura electrónica.',
+    cols: [
+      { k: 'tp', t: 'Tipo persona', opts: ['', 'NATURAL', 'JURÍDICO'], a: 'Quién le prestó el servicio o le vendió. NATURAL: un médico, odontólogo o terapeuta que factura a su nombre. JURÍDICO: una clínica, hospital, laboratorio, farmacia o aseguradora.' },
+      { k: 'ruc', t: 'RUC', a: 'RUC del proveedor, tal como aparece en la factura.' },
+      { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador del RUC del proveedor.' },
+      { k: 'nom', t: 'Nombre', a: 'Nombre o razón social del proveedor (no el suyo).' },
+      { k: 'tipo', t: 'Tipo de gasto médico', opts: ['', 'PRIMA', 'HONORARIOS POR SERVICIOS PROFESIONALES', 'HONORARIOS POR SERVICIOS HOSPITALARIOS', 'HONORARIOS POR OTROS SERVICIOS', 'MEDICAMENTOS'], a: 'PRIMA: lo que pagó a la aseguradora por su póliza de salud u hospitalización. HONORARIOS POR SERVICIOS PROFESIONALES: consultas y tratamientos de médicos, odontólogos y otros profesionales de la salud. HONORARIOS POR SERVICIOS HOSPITALARIOS: hospitalización, cirugías, cuarto, urgencias y demás cargos de clínicas y hospitales. HONORARIOS POR OTROS SERVICIOS: laboratorio, imágenes (rayos X, ultrasonido), terapias y otros servicios de salud que no son de un hospital ni una consulta. MEDICAMENTOS: compras en farmacias con receta o para un tratamiento.' },
+      { k: 'monto', t: 'Monto deducible', num: true, a: 'Lo que usted pagó y el seguro no le devolvió. Esta columna es la que se suma a la casilla 19.' },
+      { k: 'reemb', t: 'Reembolso', num: true, a: 'Lo que la aseguradora le devolvió por ese gasto, si hubo. Es informativo: no se suma, porque lo reembolsado no es deducible.' }
+    ],
+    totales(rows){ const t = r2(rows.reduce((s, x) => s + (+x.monto || 0), 0)); return { lineas: [['Monto total', t]], casillas: { 19: t } }; } },
+  esc: { cod: '96v1', titulo: 'Detalle de gastos escolares (solo para personas naturales)', casillas: 'casilla 22', tope: 3600,
+    intro: 'Primero registre a cada hijo o dependiente (concepto 1). Después cada factura del colegio, la universidad o la librería (concepto 2). El monto deducible es el total de facturas menos las becas, con un tope de B/.3,600 por cada dependiente registrado.',
+    cols: [
+      { k: 'con', t: 'Concepto', opts: ['1 - DEPENDIENTE', '2 - FACTURA'], a: '1 - DEPENDIENTE: una fila por cada hijo o persona que usted sostiene y estudia; en el monto se pone la beca que recibió, o cero si no tiene. 2 - FACTURA: una fila por cada factura de gastos escolares (matrícula, mensualidades, útiles, uniformes); en el monto se pone el valor de la factura.' },
+      { k: 'tp', t: 'Tipo persona', opts: ['', 'NATURAL', 'JURÍDICO', 'EXTRANJERO'], a: 'En una fila de dependiente: NATURAL (el hijo). En una fila de factura: quién la emitió, normalmente JURÍDICO (el colegio o la librería).' },
+      { k: 'ruc', t: 'RUC', a: 'En el dependiente: su cédula. En la factura: el RUC del colegio o del comercio.' },
+      { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador. En la cédula de un menor puede quedar en blanco.' },
+      { k: 'nom', t: 'Nombre o razón social', a: 'En el dependiente: el nombre del hijo. En la factura: el nombre del colegio o del comercio.' },
+      { k: 'monto', t: 'Monto beca/factura', num: true, a: 'En el dependiente: el valor de la beca (por ejemplo, del IFARHU), o cero. En la factura: el total de la factura.' }
+    ],
+    totales(rows){
+      const deps = rows.filter(x => /^1/.test(x.con)).length;
+      const becas = r2(rows.filter(x => /^1/.test(x.con)).reduce((s, x) => s + (+x.monto || 0), 0));
+      const fact = r2(rows.filter(x => /^2/.test(x.con)).reduce((s, x) => s + (+x.monto || 0), 0));
+      const neto = Math.max(0, r2(fact - becas)); const ded = this.tope ? Math.min(neto, this.tope * deps) : neto;
+      return { lineas: [['Monto total facturas', fact], ['Monto total becas', becas], ['Monto deducible', ded]], casillas: { [this.cas]: ded },
+        aviso: this.tope && neto > ded ? `Se aceptan ${money(ded)}: tope de B/.3,600 por cada uno de los ${deps} dependiente(s) registrados.` : (fact && !deps ? 'Registre al menos un dependiente (concepto 1).' : '') };
+    }, cas: 22 },
+  escd: { cod: '97v1', titulo: 'Detalle de gastos escolares - discapacitados (solo para personas naturales)', casillas: 'casilla 23',
+    intro: 'Igual que el anexo 96, pero para dependientes con discapacidad. La DGI indica que este gasto no tiene tope.', cols: null, totales: null, cas: 23 }
+};
+ANX.escd.cols = ANX.esc.cols; ANX.escd.totales = ANX.esc.totales;
+
+let ANXD = { don: [], med: [], esc: [], escd: [] };
+let ANX_ABIERTO = null, ANX_TMP = [];
+const ANX_DE_CASILLA = { 9: 'don', 10: 'don', 11: 'don', 12: 'don', 19: 'med', 22: 'esc', 23: 'escd' };
+function anxCasillas(){ const c = {}; Object.keys(ANX).forEach(k => Object.assign(c, ANX[k].totales.call(ANX[k], ANXD[k] || []).casillas)); return c; }
+function anxFila(k){ const f = {}; ANX[k].cols.forEach(c => f[c.k] = c.opts ? c.opts[0] : ''); return f; }
+function anxAbrir(k){
+  ANX_ABIERTO = k; ANX_TMP = (ANXD[k] || []).map(x => ({ ...x })); if (!ANX_TMP.length) ANX_TMP = [anxFila(k)];
+  const A = ANX[k], cab = rtLeer().cab;
+  $('#anxTit').innerHTML = `<div style="text-align:center;font-weight:700;color:var(--brand)">ANEXO DE PRÁCTICA ${esc(A.cod)}<br>${esc(A.titulo.toUpperCase())}</div><div class="hint" style="text-align:center">Alimenta la ${esc(A.casillas)} · Sin valor fiscal</div>`;
+  $('#anxCab').innerHTML = [['RUC', cab.ruc], ['DV', cab.dv], ['Nombre contribuyente', cab.nombre], ['Período', '2026'], ['Inicio', '01/01/2026'], ['Fin', '31/12/2026'], ['Tipo de presentación', (cab.present || 'Original').toUpperCase()]].map(([a, b]) => `<div><label>${a}</label><input value="${esc(b || '')}" disabled></div>`).join('');
+  $('#anxIntro').textContent = A.intro;
+  $('#anxAyudas').innerHTML = A.cols.map(c => `<div class="rtayuda hidden" id="anxa_${c.k}"><b>${esc(c.t)}.</b> ${esc(c.a)}</div>`).join('');
+  anxRender(); $('#anxOverlay').classList.remove('hidden');
+}
+function anxRender(){
+  const A = ANX[ANX_ABIERTO];
+  $('#anxHead').innerHTML = '<tr>' + A.cols.map(c => `<th style="${c.w ? 'width:' + c.w + 'px' : ''}">${esc(c.t)} <button type="button" class="rti" data-anxa="${c.k}" aria-label="Ayuda">i</button></th>`).join('') + '<th></th></tr>';
+  $('#anxBody').innerHTML = ANX_TMP.map((f, i) => '<tr>' + A.cols.map(c => `<td>${c.opts ? `<select data-ai="${i}" data-ak="${c.k}" style="min-width:150px">${c.opts.map(o => `<option ${o === f[c.k] ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>` : `<input data-ai="${i}" data-ak="${c.k}" value="${esc(f[c.k] ?? '')}" ${c.num ? 'type="number" step="0.01" min="0" style="text-align:right;min-width:100px"' : `style="min-width:${c.w ? 55 : 120}px"`}>`}</td>`).join('') + `<td><button type="button" class="btn small danger" data-adel="${i}" aria-label="Quitar fila">×</button></td></tr>`).join('');
+  anxTotales();
+}
+function anxTotales(){
+  const A = ANX[ANX_ABIERTO]; const t = A.totales.call(A, ANX_TMP);
+  $('#anxTot').innerHTML = t.lineas.map(([a, b]) => `<div><span>${esc(a)}</span><span>${money(b)}</span></div>`).join('') + (t.aviso ? `<div class="hint" style="color:var(--warn);border:0">${esc(t.aviso)}</div>` : '');
+}
+document.addEventListener('input', e => { const i = e.target.dataset && e.target.dataset.ai; if (i == null) return; ANX_TMP[+i][e.target.dataset.ak] = e.target.value; anxTotales(); });
+document.addEventListener('change', e => { const i = e.target.dataset && e.target.dataset.ai; if (i == null) return; ANX_TMP[+i][e.target.dataset.ak] = e.target.value; anxTotales(); });
+document.addEventListener('click', e => {
+  const d = e.target.dataset || {};
+  if (d.anx) anxAbrir(d.anx);
+  if (d.adel != null){ ANX_TMP.splice(+d.adel, 1); if (!ANX_TMP.length) ANX_TMP = [anxFila(ANX_ABIERTO)]; anxRender(); }
+  if (d.anxa != null) $('#anxa_' + d.anxa).classList.toggle('hidden');
+  if (e.target.id === 'anxAdd'){ ANX_TMP.push(anxFila(ANX_ABIERTO)); anxRender(); }
+  if (e.target.id === 'anxGuardar'){ ANXD[ANX_ABIERTO] = ANX_TMP.filter(f => (+f.monto || 0) > 0 || f.nom || f.ruc); $('#anxOverlay').classList.add('hidden'); rtCalc(); }
+  if (e.target.id === 'anxCancelar' || e.target.id === 'anxOverlay') $('#anxOverlay').classList.add('hidden');
+});
+
 /* ======== Declaración de renta · persona natural asalariada (formato del Formulario 1, asalariado puro) ======== */
 (function(){ const t = $('#tabs [data-tab="evaluacion"]'); const b = document.createElement('button'); b.dataset.tab = 'renta'; b.textContent = 'Declaración de renta'; t.after(b); })();
 let RENTAS = [];
@@ -1311,10 +1414,10 @@ const RT_LIN = [
   { n: 7, t: 'Gastos de representación', f: 'Igual a la casilla 4.', a: 'Se calcula sola con el valor de la casilla 4. Se resta porque los gastos de representación pagan su impuesto aparte (casilla 28).' },
   { n: 8, t: 'Total de ingresos gravables', f: 'Casilla 6 menos casilla 7.', a: 'Se calcula sola: total de ingresos (6) menos gastos de representación (7).' },
   { s: 'Gastos' },
-  { n: 9, t: 'Donaciones al Estado', in: true, a: 'Donaciones hechas al Estado (D. E. 143 de 2005, art. 16, literal a). Se detallan en el anexo de donaciones.' },
-  { n: 10, t: 'Donaciones (literal c y e del Art. 16, D. E. 143 de 2005)', in: true, a: 'Donaciones de los literales c y e del artículo 16 del D. E. 143 de 2005. Se detallan en el anexo de donaciones.' },
-  { n: 11, t: 'Donaciones (literal b, d y f del Art. 16, D. E. 143 de 2005)', in: true, tope: 50000, a: 'Donaciones a instituciones de beneficencia (literales b, d y f), hasta un máximo de B/.50,000. Si escribe más, solo se acepta el máximo.' },
-  { n: 12, t: 'Donaciones Ley 186-2020', in: true, a: 'Donaciones amparadas en la Ley 186 de 2020.' },
+  { n: 9, t: 'Donaciones al Estado', anx: 'don', a: 'Se llena sola con el anexo 73 (donaciones realizadas): suma las donaciones cuyo receptor es «LIT. A-ESTADO» (D. E. 143 de 2005, art. 16, literal a).' },
+  { n: 10, t: 'Donaciones (literal c y e del Art. 16, D. E. 143 de 2005)', anx: 'don', a: 'Se llena sola con el anexo 73: suma las donaciones a partidos políticos (literal c) y a entidades de lucha contra el VIH (literal e).' },
+  { n: 11, t: 'Donaciones (literal b, d y f del Art. 16, D. E. 143 de 2005)', anx: 'don', a: 'Se llena sola con el anexo 73: suma las donaciones a instituciones educativas o de beneficencia (b), ONG (d) y otras entidades (f), hasta un máximo de B/.50,000.' },
+  { n: 12, t: 'Donaciones Ley 186-2020', anx: 'don', a: 'Se llena sola con el anexo 73: suma las donaciones cuyo receptor es «LEY 186-2020».' },
   { n: 13, t: 'Gastos por ingresos en especies', in: true, a: 'Gastos relacionados con los ingresos en especie de la casilla 3.' },
   { n: 14, t: 'Total de gastos', f: 'Suma de las casillas 9 a la 13.', a: 'Se calcula sola: suma de las casillas 9 a la 13.' },
   { n: 15, t: 'Total de gastos deducibles', f: 'Igual a la casilla 14.', a: 'Se calcula sola. Un asalariado puro solo puede deducir donaciones y las deducciones personales (casillas 18 a 23).' },
@@ -1323,11 +1426,11 @@ const RT_LIN = [
   { n: 17, t: 'Pérdida', f: 'Casilla 8 menos casilla 15, si es negativo.', a: 'Se calcula sola: aparece si los gastos deducibles superan los ingresos gravables.' },
   { s: 'Menos: deducciones personales' },
   { n: 18, t: 'Deducción básica', f: 'B/.800 si declara con su cónyuge.', a: 'Se calcula sola: B/.800 solo cuando los cónyuges presentan la declaración en forma conjunta (llene el nombre del cónyuge arriba). Código Fiscal, art. 709, numeral 2.' },
-  { n: 19, t: 'Gastos médicos', in: true, a: 'Gastos médicos hechos en Panamá por el contribuyente, debidamente comprobados con factura (art. 709, numeral 7). Se detallan en el anexo de gastos médicos. No tienen tope.' },
+  { n: 19, t: 'Gastos médicos', anx: 'med', a: 'Se llena sola con el anexo 79 (gastos médicos): suma la columna «Monto deducible». Solo gastos médicos hechos en Panamá y comprobados con factura (art. 709, numeral 7). No tienen tope.' },
   { n: 20, t: 'Intereses hipotecarios', in: true, tope: 15000, a: 'Intereses pagados por el préstamo hipotecario de la vivienda principal de uso propio, ubicada en Panamá. Máximo B/.15,000. No son deducibles los intereses de préstamos con interés preferencial.' },
   { n: 21, t: 'Intereses préstamos educativos', in: true, a: 'Intereses de préstamos destinados solo a educación en Panamá, del contribuyente o de las personas que sostiene, incluidos los del IFARHU.' },
-  { n: 22, t: 'Gastos escolares', esc: true, a: 'Gastos escolares hechos en Panamá y comprobados (art. 709, numeral 9; Ley 37 de 2018). Se llena con el anexo: escriba cuántos dependientes y cuánto pagó. El tope es B/.3,600 por dependiente (DGI); la casilla toma lo menor.' },
-  { n: 23, t: 'Gastos escolares discapacitados', in: true, a: 'Gastos escolares de dependientes con discapacidad, comprobados. Se detallan en su anexo.' },
+  { n: 22, t: 'Gastos escolares', anx: 'esc', a: 'Se llena sola con el anexo 96 (gastos escolares): facturas menos becas, con tope de B/.3,600 por cada dependiente registrado (art. 709, numeral 9; Ley 37 de 2018).' },
+  { n: 23, t: 'Gastos escolares discapacitados', anx: 'escd', a: 'Se llena sola con el anexo 97 (gastos escolares de discapacitados): facturas menos becas, sin tope.' },
   { s: 'Menos: arrastre de pérdidas e incentivos' },
   { n: 24, t: 'Incentivo: fondo de jubilaciones', in: true, topeJub: true, a: 'Aportes a fondos de jubilación, pensiones y similares. No puede pasar del 10 % del ingreso bruto anual ni de B/.15,000, lo que sea menor (Ley 10 de 1993, art. 6). Si escribe más, se acepta el máximo.' },
   { s: 'Renta neta gravable' },
@@ -1354,13 +1457,16 @@ const RT_LIN = [
 
 const RT_CASOS = [
   { id: 'a1', auto: true, titulo: 'Ejemplo resuelto · Marta, asalariada que recupera dinero',
-    texto: 'Marta Ejemplo (cédula 8-333-3333, DV 45, nacida el 10/05/1990) gana B/.2,000 al mes en una sola empresa: B/.26,000 en el año con el XIII mes. Su empleador le retuvo B/.2,250 de ISR. Pagó B/.4,000 de colegiatura y útiles de su único hijo. No tiene otros ingresos ni declara con su cónyuge.',
-    pista: 'Casilla 1: 26,000 → 6 y 8: 26,000 → 16: 26,000. Casilla 22 (anexo): 1 dependiente, pagó 4,000, se acepta el tope de 3,600. Casilla 25: 26,000 − 3,600 = 22,400. Casilla 27: (22,400 − 11,000) × 15 % = 1,710. Casilla 29: 2,250. Casilla 33 (a favor): 2,250 − 1,710 = 540. Seguro educativo: base cero, porque todo su ingreso es salario con retención.',
-    entrada: { cab: { ruc: '8-333-3333', dv: '45', nombre: 'Marta Ejemplo', nac: '10/05/1990' }, v: { 1: 26000, 29: 2250, escDep: 1, escPag: 4000 } },
+    texto: 'Marta Ejemplo (cédula 8-333-3333, DV 45, nacida el 10/05/1990) gana B/.2,000 al mes en una sola empresa: B/.26,000 en el año con el XIII mes. Su empleador le retuvo B/.2,250 de ISR. Su único hijo, Luis Ejemplo (cédula 8-1001-2002), no tiene beca. Pagó B/.3,200 de colegiatura al Colegio Ejemplo, S.A. (RUC 155700800-2-2019, DV 40) y B/.800 de útiles y uniformes en Librería Práctica, S.A. (RUC 155700801-2-2019, DV 41). No tiene otros ingresos ni declara con su cónyuge.',
+    pista: 'Casilla 1: 26,000 → 6 y 8: 26,000 → 16: 26,000. Anexo 96: una fila «1 - DEPENDIENTE» para Luis (beca 0) y dos filas «2 - FACTURA» (colegio 3,200 y librería 800). Total facturas 4,000; con 1 dependiente el tope es 3,600, así que la casilla 22 toma 3,600. Casilla 25: 26,000 − 3,600 = 22,400. Casilla 27: (22,400 − 11,000) × 15 % = 1,710. Casilla 29: 2,250. Casilla 33 (a favor): 2,250 − 1,710 = 540. Seguro educativo: base cero, porque todo su ingreso es salario con retención.',
+    entrada: { cab: { ruc: '8-333-3333', dv: '45', nombre: 'Marta Ejemplo', nac: '10/05/1990' }, v: { 1: 26000, 29: 2250, anx: { esc: [
+      { con: '1 - DEPENDIENTE', tp: 'NATURAL', ruc: '8-1001-2002', dv: '', nom: 'Luis Ejemplo', monto: '0' },
+      { con: '2 - FACTURA', tp: 'JURÍDICO', ruc: '155700800-2-2019', dv: '40', nom: 'Colegio Ejemplo, S.A.', monto: '3200' },
+      { con: '2 - FACTURA', tp: 'JURÍDICO', ruc: '155700801-2-2019', dv: '41', nom: 'Librería Práctica, S.A.', monto: '800' } ] } } },
     esperado: { rng: 22400, imp: 1710, neto: -540 } },
   { id: 'a2', titulo: 'Caso para la clase · Pedro, asalariado con dos empleadores',
-    texto: 'Pedro Práctica (cédula 8-555-5555, DV 20, nacido el 03/09/1985) trabajó todo 2026 en dos empresas. En Comercial Uno, S.A. ganó B/.1,800 al mes (B/.23,400 en el año con el XIII mes) y le retuvieron B/.1,860 de ISR. Por las tardes trabajó en Servicios Dos, S.A.: B/.700 al mes (B/.9,100 en el año), y como ese salario solo no llega a B/.11,000, no le retuvieron nada. Pagó B/.1,200 en gastos médicos con factura y B/.6,000 de intereses de la hipoteca de su casa. No declara con su cónyuge.',
-    pista: 'Casilla 1: 23,400 + 9,100 = 32,500. Casilla 19: 1,200. Casilla 20: 6,000. Casilla 25: 32,500 − 7,200 = 25,300. Casilla 27: (25,300 − 11,000) × 15 % = 2,145. Casilla 29: 1,860. Casilla 32 (a pagar): 2,145 − 1,860 = 285. Lección: cada empleador retiene como si fuera el único trabajo; al sumar los salarios falta impuesto, por eso Pedro debe declarar.',
+    texto: 'Pedro Práctica (cédula 8-555-5555, DV 20, nacido el 03/09/1985) trabajó todo 2026 en dos empresas. En Comercial Uno, S.A. ganó B/.1,800 al mes (B/.23,400 en el año con el XIII mes) y le retuvieron B/.1,860 de ISR. Por las tardes trabajó en Servicios Dos, S.A.: B/.700 al mes (B/.9,100 en el año), y como ese salario solo no llega a B/.11,000, no le retuvieron nada. Tuvo estos gastos médicos con factura: consulta y control con el Dr. Juan Salud (médico independiente, cédula 8-200-300, DV 15) por B/.500; exámenes en Laboratorio Ejemplo, S.A. (RUC 155700900-2-2020, DV 12) por B/.400; y medicamentos en Farmacia Práctica, S.A. (RUC 155700901-2-2020, DV 13) por B/.450, de los que su seguro le reembolsó B/.150. Pagó B/.6,000 de intereses de la hipoteca de su casa. No declara con su cónyuge.',
+    pista: 'Casilla 1: 23,400 + 9,100 = 32,500. Anexo 79: Dr. Juan Salud, NATURAL, «HONORARIOS POR SERVICIOS PROFESIONALES», 500; Laboratorio Ejemplo, JURÍDICO, «HONORARIOS POR OTROS SERVICIOS», 400; Farmacia Práctica, JURÍDICO, «MEDICAMENTOS», monto deducible 300 y reembolso 150. Casilla 19: 1,200. Casilla 20: 6,000. Casilla 25: 32,500 − 7,200 = 25,300. Casilla 27: (25,300 − 11,000) × 15 % = 2,145. Casilla 29: 1,860. Casilla 32 (a pagar): 2,145 − 1,860 = 285. Lección: cada empleador retiene como si fuera el único trabajo; al sumar los salarios falta impuesto, por eso Pedro debe declarar.',
     entrada: null,
     esperado: { rng: 25300, imp: 2145, neto: 285 } }
 ];
@@ -1378,34 +1484,34 @@ function rtRender(){
   }).join('');
   $('#rtBody').innerHTML = RT_LIN.map(l => {
     if (l.s) return `<tr class="rtsec"><td colspan="4">${esc(l.s)}</td></tr>`;
-    const auto = !l.in && !l.esc;
+    const auto = !l.in;
     let ctl;
-    if (l.esc) ctl = `<div class="row" style="gap:6px;justify-content:flex-end;flex-wrap:nowrap"><span class="hint">Dep.</span><input id="rt_escDep" type="number" min="0" step="1" value="0" style="width:60px"><span class="hint">Pagó</span><input id="rt_escPag" type="number" min="0" step="0.01" placeholder="0.00" style="width:110px;text-align:right"></div><input id="rt_22" class="rtauto" disabled style="margin-top:4px;text-align:right">`;
+    if (l.anx) ctl = `<div class="row" style="gap:6px;flex-wrap:nowrap"><button type="button" class="btn small secondary" data-anx="${l.anx}" style="white-space:nowrap">Anexo ${ANX[l.anx].cod.replace('v1','')}</button><input id="rt_${l.n}" class="rtauto" disabled style="text-align:right"></div>`;
     else if (auto) ctl = `<input id="rt_${l.n}" class="rtauto" disabled style="text-align:right">`;
     else ctl = rtInput(l.n);
-    return `<tr class="${auto ? 'rtrow-auto' : ''}"><td class="rtlab">${esc(l.t)}${auto ? ' <span class="pill info" style="font-size:10.5px">se calcula solo</span>' : ''}</td><td class="rtnum">${String(l.n).replace(/[abc]$/, '')}</td><td style="width:34px"><button type="button" class="rti" data-ayl="${l.n}" aria-label="Ayuda de la casilla ${l.n}">i</button></td><td style="width:260px">${ctl}<div class="hint" id="rtw_${l.n}"></div></td></tr>
+    return `<tr class="${auto ? 'rtrow-auto' : ''}"><td class="rtlab">${esc(l.t)}${l.anx ? ' <span class="pill info" style="font-size:10.5px">desde el anexo</span>' : auto ? ' <span class="pill info" style="font-size:10.5px">se calcula solo</span>' : ''}</td><td class="rtnum">${String(l.n).replace(/[abc]$/, '')}</td><td style="width:34px"><button type="button" class="rti" data-ayl="${l.n}" aria-label="Ayuda de la casilla ${l.n}">i</button></td><td style="width:260px">${ctl}<div class="hint" id="rtw_${l.n}"></div></td></tr>
       <tr class="rtayuda-row hidden" id="ayl_${l.n}"><td colspan="4"><div class="rtayuda"><b>Casilla ${String(l.n).replace(/[abc]$/, '')} · ${esc(l.t)}.</b> ${esc(l.a)}${l.f ? `<br><span class="hint">Cálculo: ${esc(l.f)}</span>` : ''}</div></td></tr>`;
   }).join('');
 }
 const rv = id => { const el = $('#rt_' + id); return el ? Math.max(0, parseFloat(el.value) || 0) : 0; };
 function rtLeer(){
   const cab = {}; RT_CAB.forEach(c => { const el = $('#rtc_' + c.id); cab[c.id] = c.check ? el.checked : el.value.trim(); });
-  const v = {}; RT_LIN.forEach(l => { if (l.in) v[l.n] = rv(l.n); }); v.escDep = Math.floor(rv('escDep')); v.escPag = rv('escPag');
+  const v = {}; RT_LIN.forEach(l => { if (l.in) v[l.n] = rv(l.n); }); v.anx = JSON.parse(JSON.stringify(ANXD));
   return { cab, v };
 }
 function rtResolver(d){
   const v = d.v, c = d.cab, L = {};
-  [1,2,3,4,5,9,10,12,13,19,21,23,29,31].forEach(n => L[n] = v[n] || 0);
+  [1,2,3,4,5,13,21,29,31].forEach(n => L[n] = v[n] || 0);
+  const AC = {}; Object.keys(ANX).forEach(k => Object.assign(AC, ANX[k].totales.call(ANX[k], (v.anx && v.anx[k]) || []).casillas));
+  [9,10,11,12,19,22,23].forEach(n => L[n] = AC[n] || 0);
   L[6] = r2(L[1] + L[2] + L[3] + L[4] + L[5]);
   L[7] = L[4];
   L[8] = r2(L[6] - L[7]);
-  L[11] = Math.min(v[11] || 0, 50000);
   L[14] = r2(L[9] + L[10] + L[11] + L[12] + L[13]);
   L[15] = L[14];
   const dif = r2(L[8] - L[15]); L[16] = Math.max(dif, 0); L[17] = Math.max(-dif, 0);
   L[18] = c.conyuge ? 800 : 0;
   L[20] = Math.min(v[20] || 0, 15000);
-  L[22] = Math.min(v.escPag || 0, 3600 * (v.escDep || 0));
   L[24] = Math.min(v[24] || 0, Math.min(r2(L[6] * 0.10), 15000));
   const ded = r2(L[18] + L[19] + L[20] + L[21] + L[22] + L[23] + L[24]);
   const neta = r2(L[16] - L[17] - ded); L[25] = Math.max(neta, 0); L[26] = Math.max(-neta, 0);
@@ -1423,9 +1529,7 @@ function rtCalc(){
   const d = rtLeer(), L = rtResolver(d);
   RT_LIN.forEach(l => { if (l.n != null && !l.in){ const el = $('#rt_' + l.n); if (el) el.value = (L[l.n] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } });
   const aviso = (n, txt) => { const w = $('#rtw_' + n); if (w) w.innerHTML = txt ? `<span style="color:var(--warn)">${txt}</span>` : ''; };
-  aviso(11, (d.v[11] || 0) > 50000 ? 'Se acepta hasta B/.50,000.' : '');
   aviso(20, (d.v[20] || 0) > 15000 ? 'Se acepta hasta B/.15,000.' : '');
-  aviso(22, d.v.escPag > L[22] ? `Se acepta ${money(L[22])} (B/.3,600 por dependiente).` : '');
   aviso(24, (d.v[24] || 0) > L[24] ? `Se acepta ${money(L[24])} (10 % del ingreso o B/.15,000).` : '');
   return L;
 }
@@ -1483,7 +1587,7 @@ $('#rtGuardar').addEventListener('click', async () => {
 });
 function rtLimpiar(){
   RT_CAB.forEach(c => { const el = $('#rtc_' + c.id); if (!el || c.fijo) return; if (c.check) el.checked = false; else if (c.opts) el.selectedIndex = 0; else el.value = ''; });
-  $$('#rtBody input:not([disabled])').forEach(el => { el.value = el.id === 'rt_escDep' ? '0' : ''; });
+  $$('#rtBody input:not([disabled])').forEach(el => { el.value = ''; }); ANXD = { don: [], med: [], esc: [], escd: [] };
   rtCalc(); $('#rtMsgs').innerHTML = '';
 }
 $('#rtLimpiar').addEventListener('click', rtLimpiar);
@@ -1491,7 +1595,8 @@ function rtCargar(d){
   if (!d) return;
   rtLimpiar();
   Object.entries(d.cab || {}).forEach(([k, val]) => { const el = $('#rtc_' + k); if (!el) return; if (el.type === 'checkbox') el.checked = !!val; else if (!el.disabled) el.value = val; });
-  Object.entries(d.v || {}).forEach(([k, val]) => { const el = $('#rt_' + k); if (el && !el.disabled) el.value = val || (k === 'escDep' ? '0' : ''); });
+  Object.entries(d.v || {}).forEach(([k, val]) => { if (k === 'anx') return; const el = $('#rt_' + k); if (el && !el.disabled) el.value = val || ''; });
+  ANXD = Object.assign({ don: [], med: [], esc: [], escd: [] }, JSON.parse(JSON.stringify((d.v && d.v.anx) || {})));
   rtCalc();
 }
 function rtRenderLista(){

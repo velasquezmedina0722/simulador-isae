@@ -1559,12 +1559,23 @@ const RT_CASOS = [
       { con: '1 - DEPENDIENTE', tp: 'NATURAL', ruc: '8-1001-2002', dv: '', nom: 'Luis Ejemplo', monto: '0' },
       { con: '2 - FACTURA', tp: 'JURÍDICO', ruc: '155700800-2-2019', dv: '40', nom: 'Colegio Ejemplo, S.A.', monto: '3200' },
       { con: '2 - FACTURA', tp: 'JURÍDICO', ruc: '155700801-2-2019', dv: '41', nom: 'Librería Práctica, S.A.', monto: '800' } ] } } },
-    esperado: { rng: 22400, imp: 1710, neto: -540 } },
+    esperado: { rng: 22400, imp: 1710, neto: -540 },
+    chequeos: [
+      { v: L => L[1] + L[2], esp: 26000, msg: 'Ingresos (casillas 1 y 2): el salario de todo el año incluye el XIII mes.' },
+      { v: L => L[22], esp: 3600, msg: 'Casilla 22 (anexo 96): registre a Luis como dependiente y las dos facturas; recuerde el tope por dependiente.' },
+      { v: L => L[19] + L[20] + L[21] + L[23] + L[24], esp: 0, msg: 'Casillas 19 a 24: Marta no tiene otras deducciones; deje esas casillas en cero.' },
+      { v: L => L[29], esp: 2250, msg: 'Casilla 29: escriba el ISR que le retuvo su empleador.' } ] },
   { id: 'a2', titulo: 'Caso para la clase · Pedro, asalariado con dos empleadores',
     texto: 'Pedro Práctica (cédula 8-555-5555, DV 20, nacido el 03/09/1985) trabajó todo 2026 en dos empresas. En Comercial Uno, S.A. ganó B/.1,800 al mes (B/.23,400 en el año con el XIII mes) y le retuvieron B/.1,860 de ISR. Por las tardes trabajó en Servicios Dos, S.A.: B/.700 al mes (B/.9,100 en el año), y como ese salario solo no llega a B/.11,000, no le retuvieron nada. Tuvo estos gastos médicos con factura: consulta y control con el Dr. Juan Salud (médico independiente, cédula 8-200-300, DV 15) por B/.500; exámenes en Laboratorio Ejemplo, S.A. (RUC 155700900-2-2020, DV 12) por B/.400; y medicamentos en Farmacia Práctica, S.A. (RUC 155700901-2-2020, DV 13) por B/.450, de los que su seguro le reembolsó B/.150. Pagó B/.6,000 de intereses de la hipoteca de su casa. No declara con su cónyuge.',
     pista: 'Casilla 1: 23,400 + 9,100 = 32,500. Anexo 79: Dr. Juan Salud, NATURAL, «HONORARIOS POR SERVICIOS PROFESIONALES», 500; Laboratorio Ejemplo, JURÍDICO, «HONORARIOS POR OTROS SERVICIOS», 400; Farmacia Práctica, JURÍDICO, «MEDICAMENTOS», monto deducible 300 y reembolso 150. Casilla 19: 1,200. Casilla 20: 6,000. Casilla 25: 32,500 − 7,200 = 25,300. Casilla 27: (25,300 − 11,000) × 15 % = 2,145. Casilla 29: 1,860. Casilla 32 (a pagar): 2,145 − 1,860 = 285. Lección: cada empleador retiene como si fuera el único trabajo; al sumar los salarios falta impuesto, por eso Pedro debe declarar.',
     entrada: null,
-    esperado: { rng: 25300, imp: 2145, neto: 285 } }
+    esperado: { rng: 25300, imp: 2145, neto: 285 },
+    chequeos: [
+      { v: L => L[1] + L[2], esp: 32500, msg: 'Ingresos (casillas 1 y 2): sume los salarios del año de los dos empleadores.' },
+      { v: L => L[19], esp: 1200, msg: 'Casilla 19 (anexo 79): solo se deduce lo que Pedro pagó y el seguro no le devolvió. Revise cada fila, sobre todo la farmacia.' },
+      { v: L => L[20], esp: 6000, msg: 'Casilla 20: escriba los intereses que pagó por la hipoteca de su casa.' },
+      { v: L => L[18] + L[21] + L[22] + L[23] + L[24], esp: 0, msg: 'Casillas 18, 21 a 24: Pedro no tiene esas deducciones ni declara con su cónyuge.' },
+      { v: L => L[29], esp: 1860, msg: 'Casilla 29: escriba solo el ISR que le retuvieron (revise cuál de los dos empleadores retuvo).' } ] }
 ];
 
 /* Construcción del formulario */
@@ -1664,13 +1675,15 @@ $('#rtCasoTxt').addEventListener('click', e => {
 function rtRes(L){ return { rng: L[25], imp: L[27], neto: r2(L[32] - L[33]) }; }
 function rtCumple(c, r){ const e = c.esperado; return near(r.rng, e.rng) && near(r.imp, e.imp) && near(r.neto, e.neto); }
 $('#rtRevisar').addEventListener('click', () => {
-  const c = rtCasoActivo(); const r = rtRes(rtCalc());
+  const c = rtCasoActivo(); const Lr = rtCalc(); const r = rtRes(Lr);
   if (!c) return errMsg('#rtMsgs', 'Elija primero un caso arriba, en «¿Qué caso está resolviendo?».');
   const e = c.esperado; const m = [];
   m.push(near(r.rng, e.rng) ? '✓ Casilla 25, renta neta gravable: correcta.' : '✗ Casilla 25, renta neta gravable: no coincide. Revise los ingresos (1 a 5) y las deducciones (18 a 24).');
   m.push(near(r.imp, e.imp) ? '✓ Casilla 27, impuesto causado: correcto.' : '✗ Casilla 27, impuesto causado: no coincide.');
   m.push(near(r.neto, e.neto) ? '✓ Casillas 32 y 33, resultado final: correcto.' : '✗ Casillas 32 y 33, resultado final: no coincide. Revise las retenciones (29).');
   const ok = rtCumple(c, r);
+  const fallas = ok ? [] : (c.chequeos || []).filter(q => !near(q.v(Lr), q.esp)).map(q => '• ' + q.msg);
+  if (fallas.length) m.push('<b>Dónde revisar:</b>', ...fallas); else if (!ok) m.push('Los datos de entrada parecen bien; revise el encabezado (por ejemplo, si marcó cónyuge o embajada).');
   $('#rtMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b> Pulse «Guardar declaración» para que quede registrado.' : ''}</div>`;
 });
 $('#rtGuardar').addEventListener('click', async () => {

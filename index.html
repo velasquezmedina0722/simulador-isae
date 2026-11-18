@@ -1395,17 +1395,17 @@ const ANX = {
       return { lineas: [['Literal a', a], ['Literal b, d, f', bdf], ['Literal c, e', ce], ['Ley 186-2020', ley]], casillas: { 9: a, 10: ce, 11: Math.min(bdf, 50000), 12: ley }, aviso: bdf > 50000 ? 'Literales b, d y f: pasan de B/.50,000; la casilla 11 toma el tope.' : '' };
     } },
   med: { cod: '79v1', titulo: 'Detalle de gastos médicos (solo para personas naturales)', casillas: 'casilla 19',
-    intro: 'Una fila por cada proveedor o factura de gastos médicos hechos en Panamá. Solo se deduce lo que usted pagó y el seguro no le devolvió. Cada monto debe tener su factura electrónica.',
+    intro: 'Una fila por cada proveedor o factura de gastos médicos hechos en Panamá. En «Monto deducible» escriba el total de la factura y en «Reembolso» lo que el seguro le devolvió: el sistema resta el reembolso, igual que e-Tax. Cada monto debe tener su factura electrónica.',
     cols: [
       { k: 'tp', t: 'Tipo persona', opts: ['', 'NATURAL', 'JURÍDICO'], a: 'Quién le prestó el servicio o le vendió. NATURAL: un médico, odontólogo o terapeuta que factura a su nombre. JURÍDICO: una clínica, hospital, laboratorio, farmacia o aseguradora.' },
       { k: 'ruc', t: 'RUC', a: 'RUC del proveedor, tal como aparece en la factura.' },
       { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador del RUC del proveedor.' },
       { k: 'nom', t: 'Nombre', a: 'Nombre o razón social del proveedor (no el suyo).' },
       { k: 'tipo', t: 'Tipo de gasto médico', opts: ['', 'PRIMA', 'HONORARIOS POR SERVICIOS PROFESIONALES', 'HONORARIOS POR SERVICIOS HOSPITALARIOS', 'HONORARIOS POR OTROS SERVICIOS', 'MEDICAMENTOS'], a: 'PRIMA: lo que pagó a la aseguradora por su póliza de salud u hospitalización. HONORARIOS POR SERVICIOS PROFESIONALES: consultas y tratamientos de médicos, odontólogos y otros profesionales de la salud. HONORARIOS POR SERVICIOS HOSPITALARIOS: hospitalización, cirugías, cuarto, urgencias y demás cargos de clínicas y hospitales. HONORARIOS POR OTROS SERVICIOS: laboratorio, imágenes (rayos X, ultrasonido), terapias y otros servicios de salud que no son de un hospital ni una consulta. MEDICAMENTOS: compras en farmacias con receta o para un tratamiento.' },
-      { k: 'monto', t: 'Monto deducible', num: true, a: 'Lo que usted pagó y el seguro no le devolvió. Esta columna es la que se suma a la casilla 19.' },
-      { k: 'reemb', t: 'Reembolso', num: true, a: 'Lo que la aseguradora le devolvió por ese gasto, si hubo. Es informativo: no se suma, porque lo reembolsado no es deducible.' }
+      { k: 'monto', t: 'Monto deducible', num: true, a: 'El total de la factura del gasto médico. A este monto el sistema le resta el reembolso, como lo hace e-Tax.' },
+      { k: 'reemb', t: 'Reembolso', num: true, a: 'Lo que la aseguradora le devolvió por ese gasto, si hubo. Se resta del monto deducible, porque lo reembolsado no es deducible (si no hubo reembolso, deje 0).' }
     ],
-    totales(rows){ const t = r2(rows.reduce((s, x) => s + (+x.monto || 0), 0)); return { lineas: [['Monto total', t]], casillas: { 19: t } }; } },
+    totales(rows){ const f = r2(rows.reduce((s, x) => s + (+x.monto || 0), 0)), re = r2(rows.reduce((s, x) => s + Math.min(+x.reemb || 0, +x.monto || 0), 0)), t = r2(f - re); return { lineas: re ? [['Monto deducible', f], ['Menos reembolsos', re], ['Monto total', t]] : [['Monto total', t]], casillas: { 19: t } }; } },
   esc: { cod: '96v1', titulo: 'Detalle de gastos escolares (solo para personas naturales)', casillas: 'casilla 22', tope: 3600,
     intro: 'Primero registre a cada hijo o dependiente (concepto 1). Después cada factura del colegio, la universidad o la librería (concepto 2). El monto deducible es el total de facturas menos las becas, con un tope de B/.3,600 por cada dependiente registrado.',
     cols: [
@@ -1567,12 +1567,12 @@ const RT_CASOS = [
       { v: L => L[29], esp: 2250, msg: 'Casilla 29: escriba el ISR que le retuvo su empleador.' } ] },
   { id: 'a2', titulo: 'Caso para la clase · Pedro, asalariado con dos empleadores',
     texto: 'Pedro Práctica (cédula 8-555-5555, DV 20, nacido el 03/09/1985) trabajó todo 2026 en dos empresas. En Comercial Uno, S.A. ganó B/.1,800 al mes (B/.23,400 en el año con el XIII mes) y le retuvieron B/.1,860 de ISR. Por las tardes trabajó en Servicios Dos, S.A.: B/.700 al mes (B/.9,100 en el año), y como ese salario solo no llega a B/.11,000, no le retuvieron nada. Tuvo estos gastos médicos con factura: consulta y control con el Dr. Juan Salud (médico independiente, cédula 8-200-300, DV 15) por B/.500; exámenes en Laboratorio Ejemplo, S.A. (RUC 155700900-2-2020, DV 12) por B/.400; y medicamentos en Farmacia Práctica, S.A. (RUC 155700901-2-2020, DV 13) por B/.450, de los que su seguro le reembolsó B/.150. Pagó B/.6,000 de intereses de la hipoteca de su casa. No declara con su cónyuge.',
-    pista: 'Casilla 1: 23,400 + 9,100 = 32,500. Anexo 79: Dr. Juan Salud, NATURAL, «HONORARIOS POR SERVICIOS PROFESIONALES», 500; Laboratorio Ejemplo, JURÍDICO, «HONORARIOS POR OTROS SERVICIOS», 400; Farmacia Práctica, JURÍDICO, «MEDICAMENTOS», monto deducible 300 y reembolso 150. Casilla 19: 1,200. Casilla 20: 6,000. Casilla 25: 32,500 − 7,200 = 25,300. Casilla 27: (25,300 − 11,000) × 15 % = 2,145. Casilla 29: 1,860. Casilla 32 (a pagar): 2,145 − 1,860 = 285. Lección: cada empleador retiene como si fuera el único trabajo; al sumar los salarios falta impuesto, por eso Pedro debe declarar.',
+    pista: 'Casilla 1: 23,400 + 9,100 = 32,500. Anexo 79: Dr. Juan Salud, NATURAL, «HONORARIOS POR SERVICIOS PROFESIONALES», 500; Laboratorio Ejemplo, JURÍDICO, «HONORARIOS POR OTROS SERVICIOS», 400; Farmacia Práctica, JURÍDICO, «MEDICAMENTOS», monto deducible 450 y reembolso 150 (el anexo resta el reembolso, como e-Tax: 450 − 150 = 300). Casilla 19: 500 + 400 + 300 = 1,200. Casilla 20: 6,000. Casilla 25: 32,500 − 7,200 = 25,300. Casilla 27: (25,300 − 11,000) × 15 % = 2,145. Casilla 29: 1,860. Casilla 32 (a pagar): 2,145 − 1,860 = 285. Lección: cada empleador retiene como si fuera el único trabajo; al sumar los salarios falta impuesto, por eso Pedro debe declarar.',
     entrada: null,
     esperado: { rng: 25300, imp: 2145, neto: 285 },
     chequeos: [
       { v: L => L[1] + L[2], esp: 32500, msg: 'Ingresos (casillas 1 y 2): sume los salarios del año de los dos empleadores.' },
-      { v: L => L[19], esp: 1200, msg: 'Casilla 19 (anexo 79): solo se deduce lo que Pedro pagó y el seguro no le devolvió. Revise cada fila, sobre todo la farmacia.' },
+      { v: L => L[19], esp: 1200, msg: 'Casilla 19 (anexo 79): en cada fila va el total de la factura y, en «Reembolso», lo que el seguro devolvió. Revise cada fila, sobre todo la farmacia.' },
       { v: L => L[20], esp: 6000, msg: 'Casilla 20: escriba los intereses que pagó por la hipoteca de su casa.' },
       { v: L => L[18] + L[21] + L[22] + L[23] + L[24], esp: 0, msg: 'Casillas 18, 21 a 24: Pedro no tiene esas deducciones ni declara con su cónyuge.' },
       { v: L => L[29], esp: 1860, msg: 'Casilla 29: escriba solo el ISR que le retuvieron (revise cuál de los dos empleadores retuvo).' } ] }

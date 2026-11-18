@@ -400,6 +400,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
       <div class="overlay hidden" id="anxOverlay"><div class="ficha" style="max-width:1150px">
         <div id="anxTit"></div>
         <div class="grid" id="anxCab" style="margin-top:10px"></div>
+        <div id="anxCaso" style="margin-top:10px"></div>
         <p class="hint" id="anxIntro" style="margin:10px 0 4px;text-align:justify"></p>
         <div class="tablewrap"><table class="items"><thead id="anxHead"></thead><tbody id="anxBody"></tbody></table></div>
         <div id="anxAyudas"></div>
@@ -1439,6 +1440,8 @@ function anxAbrir(k){
   $('#anxTit').innerHTML = `<div style="text-align:center;font-weight:700;color:var(--brand)">ANEXO DE PRÁCTICA ${esc(A.cod)}<br>${esc(A.titulo.toUpperCase())}</div><div class="hint" style="text-align:center">Alimenta la ${esc(A.casillas)} · Sin valor fiscal</div>`;
   $('#anxCab').innerHTML = [['RUC', cab.ruc], ['DV', cab.dv], ['Nombre contribuyente', cab.nombre], ['Período', '2026'], ['Inicio', '01/01/2026'], ['Fin', '31/12/2026'], ['Tipo de presentación', (cab.present || 'Original').toUpperCase()]].map(([a, b]) => `<div><label>${a}</label><input value="${esc(b || '')}" disabled></div>`).join('');
   $('#anxIntro').textContent = A.intro;
+  const cs = rtCasoActivo(), dat = cs && cs.entrada && cs.entrada.v.anx && cs.entrada.v.anx[k];
+  $('#anxCaso').innerHTML = cs ? `<div class="msg warn" style="text-align:justify"><b>Datos del caso · ${esc(cs.titulo)}</b><br>${esc(cs.texto)}${dat ? '<div class="row" style="margin-top:8px"><button class="btn small" type="button" id="anxEjemplo">Llenar este anexo con los datos del ejemplo</button></div>' : ''}</div>` : '<div class="hint">Elija un caso en la parte de arriba de la declaración para ver aquí sus datos.</div>';
   $('#anxAyudas').innerHTML = A.cols.map(c => `<div class="rtayuda hidden" id="anxa_${c.k}"><b>${esc(c.t)}.</b> ${esc(c.a)}</div>`).join('');
   anxRender(); $('#anxOverlay').classList.remove('hidden');
 }
@@ -1459,6 +1462,7 @@ document.addEventListener('click', e => {
   if (d.anx) anxAbrir(d.anx);
   if (d.adel != null){ ANX_TMP.splice(+d.adel, 1); if (!ANX_TMP.length) ANX_TMP = [anxFila(ANX_ABIERTO)]; anxRender(); }
   if (d.anxa != null) $('#anxa_' + d.anxa).classList.toggle('hidden');
+  if (e.target.id === 'anxEjemplo'){ const cs = rtCasoActivo(); ANX_TMP = cs.entrada.v.anx[ANX_ABIERTO].map(x => ({ ...x })); anxRender(); }
   if (e.target.id === 'anxAdd'){ ANX_TMP.push(anxFila(ANX_ABIERTO)); anxRender(); }
   if (e.target.id === 'anxGuardar'){ ANXD[ANX_ABIERTO] = ANX_TMP.filter(f => (+f.monto || 0) > 0 || f.nom || f.ruc); $('#anxOverlay').classList.add('hidden'); rtCalc(); }
   if (e.target.id === 'anxCancelar' || e.target.id === 'anxOverlay') $('#anxOverlay').classList.add('hidden');

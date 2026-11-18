@@ -1626,6 +1626,8 @@ function rtCalc(){
   RT_LIN.forEach(l => { if (l.n != null && !l.in){ const el = $('#rt_' + l.n); if (el) el.value = (L[l.n] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } });
   const aviso = (n, txt) => { const w = $('#rtw_' + n); if (w) w.innerHTML = txt ? `<span style="color:var(--warn)">${txt}</span>` : ''; };
   aviso(20, (d.v[20] || 0) > 15000 ? 'Se acepta hasta B/.15,000.' : '');
+  const sinRet = r2(L[6] - L[1] - L[3] - L[4] - L[5]);
+  aviso(34, sinRet > 0 && L[15] > 0 ? `Ingresos sin retención ${money(sinRet)} menos gastos deducibles de la casilla 15 (${money(L[15])}).${L[34] === 0 ? ' Por eso la base queda en cero.' : ''}` : '');
   aviso(24, (d.v[24] || 0) > L[24] ? `Se acepta ${money(L[24])} (10 % del ingreso o B/.15,000).` : '');
   return L;
 }

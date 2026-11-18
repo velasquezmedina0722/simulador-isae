@@ -1214,6 +1214,49 @@ function botonesResolver(box, pref, arr){
 }
 document.addEventListener('click', e => { const k = e.target.dataset && e.target.dataset.resolver; if (k){ show('emitir'); elegirCaso(k); } });
 
+/* ======== Soluciones de los casos (solo el facilitador las ve) ======== */
+const REC_C1 = { rTipo: '01', tc: '2', ruc: '155700500-2-2020', dv: '33', nombre: 'Constructora Ejemplo, S.A.', dir: 'Calle 50, Ciudad de Panamá', correo: 'compras@constructora-ejemplo.test' };
+const REC_EV1 = { rTipo: '01', tc: '1', ruc: '8-765-4321', dv: '12', nombre: 'José Ejemplo', dir: 'Barrio Bolívar, David, Chiriquí', correo: 'jose.ejemplo@correo.test' };
+const solItem = (cod, desc, cant, precio, tasa, desc_ = 0) => ({ cod, desc, cant, precio, desc_, tasa });
+const SOL = {
+  'p:c1': { doc: '01', rec: REC_C1, items: [solItem('CEM-01', 'Bolsa de cemento', 10, 9.5, 7)], forma: '02' },
+  'p:c2': { doc: '01', rec: { rTipo: '02' }, items: [solItem('HER-01', 'Martillo', 1, 12, 7), solItem('ALI-01', 'Arroz (libra)', 2, 0.75, 0)], forma: '04' },
+  'p:c3': { doc: '03', rec: { rTipo: '04', pas: 'NIT-900123456', pais: 'Colombia', nombre: 'Inversiones Andinas S.A.S.', dir: 'Carrera 7 # 71-21, Bogotá', correo: 'contabilidad@inversiones-andinas.test' }, items: [solItem('SRV-01', 'Asesoría contable', 1, 1500, 0)], forma: '08' },
+  'p:c4': { doc: '04', ref: '155700500-2-2020', refCaso: 'Caso 1 de práctica', motivo: 'Devolución de mercancía', rec: REC_C1, items: [solItem('CEM-01', 'Bolsa de cemento (devolución)', 2, 9.5, 7)], forma: '02' },
+  'p:c5': { doc: '01', rec: { rTipo: '03', ruc: '8-NT-1-12345', dv: '10', nombre: 'Ministerio de Ejemplo', dir: 'Avenida Perú, Ciudad de Panamá', correo: 'compras@ministerio-ejemplo.test' }, items: [solItem('SRV-02', 'Capacitación', 1, 800, 7)], forma: '01', plazo: 30, ret: '2' },
+  'e:ev1': { doc: '01', rec: REC_EV1, items: [solItem('PIN-01', 'Galón de pintura', 3, 22, 7, 6), solItem('BRO-01', 'Brocha', 1, 4, 7)], forma: '03' },
+  'e:ev2': { doc: '01', rec: { rTipo: '02' }, items: [solItem('BEB-01', 'Caja de cerveza', 1, 18, 10), solItem('TAB-01', 'Paquete de cigarrillos', 1, 6, 15), solItem('LAC-01', 'Leche (litro)', 2, 1.95, 0)], forma: '02' },
+  'e:ev3': { doc: '03', rec: { rTipo: '04', pas: 'EIN-12-3456789', pais: 'Estados Unidos', nombre: 'Global Tax Advisors LLC', dir: '100 Main Street, Miami, Florida', correo: 'billing@globaltax-advisors.test' }, items: [solItem('SRV-01', 'Servicios de contabilidad', 1, 2400, 0)], forma: '08' },
+  'e:ev4': { doc: '04', ref: '8-765-4321', refCaso: 'Caso 1 de la evaluación', motivo: 'Descuento posterior a la venta', rec: REC_EV1, items: [solItem('DES-01', 'Descuento adicional', 1, 10, 7)], forma: '03' },
+  'e:ev5': { doc: '01', rec: { rTipo: '03', ruc: '8-NT-2-54321', dv: '45', nombre: 'Municipio de Ejemplo', dir: 'Calle Principal, La Chorrera', correo: 'tesoreria@municipio-ejemplo.test' }, items: [solItem('DIS-01', 'Diseño de afiche', 1, 350, 7)], forma: '01', plazo: 45, ret: '2' }
+};
+function llenarSolucion(k){
+  const S = SOL[k]; if (!S) return;
+  const put = (id, v) => { const el = $(id); if (!el) return; el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); el.dispatchEvent(new Event('change', { bubbles: true })); };
+  limpiarFormulario(); $('#docMsgs').innerHTML = '';
+  put('#fTipoDoc', S.doc);
+  if (S.ref){
+    const f = STATE.docs.find(x => x.emisor === STATE.emisor && (x.tipoDoc === '01' || x.tipoDoc === '03') && x.estado !== 'Anulado' && norm(x.receptor.ruc) === S.ref);
+    if (!f){ $('#docMsgs').innerHTML = `<div class="msg warn">Para esta nota primero emita la factura del ${esc(S.refCaso)}: la nota necesita esa factura como referencia.</div>`; return; }
+    put('#fRef', f.id); put('#fMotivo', S.motivo);
+  }
+  const r = S.rec;
+  put('#rTipo', r.rTipo);
+  if (r.tc) put('#rTipoContrib', r.tc);
+  ['ruc', 'dv', 'pas', 'pais', 'nombre', 'dir', 'correo'].forEach(c => { if (r[c] != null) put('#r' + c.charAt(0).toUpperCase() + c.slice(1), r[c]); });
+  ITEMS = S.items.map(x => ({ ...x })); renderItems();
+  put('#pForma', S.forma); if (S.plazo) put('#pPlazo', S.plazo);
+  if (S.ret) put('#ovObjRet', S.ret);
+  calc();
+  $('#docMsgs').innerHTML = '<div class="msg ok">Solución cargada. Explíquela con la clase y pulse «Emitir documento».</div>';
+}
+const _renderCasoBarBase = renderCasoBar;
+renderCasoBar = function(){
+  _renderCasoBarBase();
+  if (IS_TEACHER && casoActivo() && SOL[CASO]) $('#casoTxt').insertAdjacentHTML('beforeend', '<div class="row" style="margin-top:8px"><button class="btn small" type="button" id="btnSolucion">Llenar resuelto (solo facilitador)</button><span class="hint">Los estudiantes no ven este botón.</span></div>');
+};
+document.addEventListener('click', e => { if (e.target.id === 'btnSolucion') llenarSolucion(CASO); });
+
 /* ======== Documentos emitidos ======== */
 function renderEmitidos(){
   const docs = STATE.docs; $('#emitEmpty').classList.toggle('hidden', docs.length > 0);

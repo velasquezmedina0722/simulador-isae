@@ -1257,6 +1257,43 @@ renderCasoBar = function(){
 };
 document.addEventListener('click', e => { if (e.target.id === 'btnSolucion') llenarSolucion(CASO); });
 
+/* ======== Emitir todos los casos resueltos en la cuenta del facilitador ======== */
+const ORDEN_SOL = ['p:c1', 'p:c2', 'p:c3', 'p:c4', 'p:c5', 'e:ev1', 'e:ev2', 'e:ev3', 'e:ev4', 'e:ev5'];
+function casoYaResuelto(k){
+  const [g, id] = k.split(':');
+  const c = (g === 'p' ? CASES : EVAL).find(x => x.id === id);
+  return !!c && STATE.docs.some(d => d.estado !== 'Anulado' && c.check(d, STATE.docs));
+}
+async function emitirTodosResueltos(btn){
+  const espera = ms => new Promise(r => setTimeout(r, ms));
+  const t0 = btn.textContent; btn.disabled = true;
+  let hechos = 0, saltados = 0;
+  for (const k of ORDEN_SOL){
+    if (casoYaResuelto(k)){ saltados++; continue; }
+    btn.textContent = 'Emitiendo ' + k.replace('p:c', 'práctica ').replace('e:ev', 'evaluación ') + '…';
+    show('emitir'); elegirCaso(k); await espera(150);
+    llenarSolucion(k); await espera(150);
+    const antes = STATE.docs.length;
+    $('#btnEmitir').click();
+    for (let i = 0; i < 50 && STATE.docs.length === antes; i++) await espera(100);
+    $('#cafeOverlay').classList.add('hidden');
+    if (STATE.docs.length > antes) hechos++;
+    await espera(200);
+  }
+  await guardarNotaEval();
+  btn.disabled = false; btn.textContent = t0;
+  show('emitidos');
+  $('#emitBody').closest('.card').insertAdjacentHTML('afterbegin', `<div class="msg ok">Listo: ${hechos} caso(s) emitidos${saltados ? `, ${saltados} ya estaban resueltos` : ''}. Pulse «Ver CAFE» para mostrar cada uno.</div>`);
+}
+(function(){
+  const html = '<div class="row facil-only hidden" style="margin:0 0 12px"><button class="btn small" type="button" data-todos="1">Emitir en mi cuenta los 10 casos resueltos (solo facilitador)</button><span class="hint">Práctica y evaluación, en orden. Los que ya estén resueltos se saltan.</span></div>';
+  $('#casesBox').insertAdjacentHTML('beforebegin', html);
+  $('#evalBox').insertAdjacentHTML('beforebegin', html);
+})();
+document.addEventListener('click', e => { if (e.target.dataset && e.target.dataset.todos) emitirTodosResueltos(e.target); });
+const _showBase = show;
+show = function(tab){ _showBase(tab); $$('.facil-only').forEach(x => x.classList.toggle('hidden', !IS_TEACHER)); };
+
 /* ======== Documentos emitidos ======== */
 function renderEmitidos(){
   const docs = STATE.docs; $('#emitEmpty').classList.toggle('hidden', docs.length > 0);

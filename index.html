@@ -1130,7 +1130,12 @@ $('#btnEmitir').addEventListener('click', async () => {
   showMsgs(v, 'Documento autorizado (simulado). Número ' + d.numero + '.');
   const ca = casoActivo();
   if (ca && ca.grupo !== 'Evaluación') $('#docMsgs').insertAdjacentHTML('beforeend', ca.c.check(d) ? `<div class="msg ok">✓ Este documento cumple el ${esc(ca.c.titulo.split('·')[0].trim())}.</div>` : `<div class="msg warn">Este documento quedó emitido, pero no cumple el ${esc(ca.c.titulo.split('·')[0].trim())}. Revise el enunciado; puede anularlo y emitir otro.</div>`);
-  if (ca && ca.grupo === 'Evaluación') $('#docMsgs').insertAdjacentHTML('beforeend', '<div class="msg ok">Documento guardado para la evaluación.</div>');
+  if (ca && ca.grupo === 'Evaluación'){
+    const okEv = ca.c.check(d, STATE.docs);
+    const nom = esc(ca.c.titulo.split('·')[0].trim());
+    $('#docMsgs').insertAdjacentHTML('beforeend', okEv ? `<div class="msg ok">✓ Este documento cumple el ${nom} de la evaluación.</div>` : `<div class="msg err">✗ Este documento no cumple el ${nom} de la evaluación. Revise el enunciado; puede anularlo y emitir otro.</div>`);
+    guardarNotaEval().then(n => { if (n != null) $('#docMsgs').insertAdjacentHTML('beforeend', `<div class="msg ok">Su nota de la evaluación va en <b>${n} / 100</b> (guardada).</div>`); });
+  }
   openCafe(d);
   limpiarFormulario();
 });
@@ -1226,7 +1231,7 @@ $('#emitBody').addEventListener('click', async e => {
     const d = STATE.docs.find(x => x.id === a);
     if (e.target.dataset.confirm !== '1'){ e.target.dataset.confirm = '1'; e.target.textContent = '¿Confirmar anulación?'; return; }
     const nuevo = { ...d, estado: 'Anulado' }; delete nuevo.dbid;
-    try { await api.update('documentos', { id: d.dbid }, { data: nuevo }); d.estado = 'Anulado'; renderEmitidos(); }
+    try { await api.update('documentos', { id: d.dbid }, { data: nuevo }); d.estado = 'Anulado'; renderEmitidos(); guardarNotaEval(); }
     catch(err){ e.target.textContent = 'Error: ' + errText(err); }
   }
 });
@@ -1266,10 +1271,17 @@ const EVAL = [
    check:d=>d.emisor==='E3'&&d.tipoDoc==='01'&&d.receptor.tipo==='03'&&norm(d.receptor.ruc)==='8-NT-2-54321'&&d.receptor.dv==='45'&&near(d.totales.total,374.50)&&d.pago.forma==='01'&&String(d.pago.plazo)==='45'}
 ];
 function evalResult(docs){ return EVAL.map(c => ({ id: c.id, pts: c.pts, ok: docs.some(d => d.estado !== 'Anulado' && c.check(d, docs)) })); }
+async function guardarNotaEval(){
+  const r = evalResult(STATE.docs); const nota = r.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);
+  try { const row = await api.upsert('notas', { evaluacion: EVAL_ID, nota, detalle: r, actualizado: new Date().toISOString() });
+    NOTAS = NOTAS.filter(x => x.evaluacion !== EVAL_ID).concat([{ ...row, nota, actualizado: row.actualizado || new Date().toISOString() }]); return nota; }
+  catch(e){ return null; }
+}
 function renderEval(){
-  $('#evalBox').innerHTML = EVAL.map(c => `<div class="case"><div class="row"><h4>${c.titulo}</h4><span class="pill info right">${c.pts} puntos</span></div><div style="font-size:13.5px">${c.texto}</div><div class="hint">Emisor: ${esc(EMISORES.find(x => x.id === c.emisor).nombre)}</div></div>`).join('');
-  const n = NOTAS.find(x => x.evaluacion === EVAL_ID);
-  $('#notaBox').innerHTML = n ? `<div class="msg ok">Nota guardada: <b>${n.nota} / 100</b> · ${fdate(n.actualizado)}</div>` : '';
+  const res = evalResult(STATE.docs);
+  $('#evalBox').innerHTML = EVAL.map((c, i) => `<div class="case"><div class="row"><h4>${c.titulo}</h4><span class="pill ${res[i].ok ? 'ok' : 'info'} right">${res[i].ok ? '✓ Correcto' : 'Pendiente o con errores'}</span><span class="pill info">${c.pts} puntos</span></div><div style="font-size:13.5px">${c.texto}</div><div class="hint">Emisor: ${esc(EMISORES.find(x => x.id === c.emisor).nombre)}</div></div>`).join('');
+  const nota = res.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);
+  $('#notaBox').innerHTML = `<div class="msg ${nota >= 70 ? 'ok' : 'warn'}">Su nota según los documentos emitidos: <b>${nota} / 100</b> · ${res.filter(x => x.ok).length} de ${res.length} casos correctos. Puede anular un documento equivocado y emitir otro.</div>`;
 }
 $('#btnNota').addEventListener('click', async () => {
   const r = evalResult(STATE.docs); const nota = r.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);

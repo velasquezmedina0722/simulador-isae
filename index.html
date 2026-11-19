@@ -411,6 +411,48 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <div class="row" style="margin-top:12px"><button class="btn" type="button" id="anxGuardar">Guardar anexo</button><button class="btn secondary" type="button" id="anxCancelar">Cancelar</button></div>
       </div></div>
     </div>
+    <!-- DECLARACIÓN DE RENTA · PERSONA JURÍDICA -->
+    <div data-view="rentaj" class="hidden">
+      <div class="card casobar">
+        <div class="row">
+          <label for="rjCasoSel" style="margin:0;font-size:14px;color:var(--brand)">¿Qué caso está resolviendo?</label>
+          <select id="rjCasoSel" style="max-width:440px;flex:1"></select>
+          <button class="btn small secondary right" type="button" id="rjToggle">Ocultar enunciado</button>
+        </div>
+        <div id="rjCasoTxt" style="margin-top:8px;font-size:14px"></div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:6px">
+          <div>
+            <h2 style="margin:0">Declaración jurada de rentas · Persona jurídica</h2>
+            <div class="hint">Formulario de práctica · Jurídico general · Período 2026 · Sin valor fiscal</div>
+          </div>
+          <label class="right" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600;color:var(--brand)"><input type="checkbox" id="rjVerAyuda" style="width:auto"> Ver todas las explicaciones</label>
+        </div>
+        <p class="hint" style="margin-top:0">Las casillas con fondo gris se calculan solas. Las que dicen «desde el anexo» se llenan con el botón del anexo. Pulse <b>i</b> para ver qué va en cada casilla.</p>
+        <div class="grid" id="rjCab"></div>
+      </div>
+      <div class="card">
+        <div class="tablewrap"><table class="rtform"><tbody id="rjBody"></tbody></table></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" type="button" id="rjRevisar">Revisar caso</button>
+          <button class="btn danger right" type="button" id="rjLimpiar">Limpiar</button>
+        </div>
+        <div class="msgs" id="rjMsgs"></div>
+      </div>
+      <div class="overlay hidden" id="ajOverlay"><div class="ficha" style="max-width:1150px">
+        <div id="ajTit"></div>
+        <div id="ajCaso" style="margin-top:10px"></div>
+        <p class="hint" id="ajIntro" style="margin:10px 0 4px;text-align:justify"></p>
+        <div class="tablewrap"><table class="items"><thead id="ajHead"></thead><tbody id="ajBody"></tbody></table></div>
+        <div id="ajAyudas"></div>
+        <div class="row" style="margin-top:8px;align-items:flex-start">
+          <button class="btn small secondary" type="button" id="ajAdd">+ Agregar fila</button>
+          <div class="totals right" id="ajTot" style="min-width:320px"></div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="ajGuardar">Guardar anexo</button><button class="btn secondary" type="button" id="ajCancelar">Cancelar</button></div>
+      </div></div>
+    </div>
 
     <!-- TAREAS -->
     <div data-view="tareas" class="hidden">
@@ -1723,6 +1765,480 @@ $('#rtLista').addEventListener('click', e => {
 });
 let RT_LISTO = false;
 function renderRenta(){ if (!RT_LISTO){ rtRender(); RT_LISTO = true; } rtRenderBar(); rtCalc(); rtRenderLista(); }
+/* ======== Declaración de renta · Persona jurídica (Formulario 2, jurídico general) ======== */
+const RJ_CAB = [
+  { id: 'ruc', label: 'RUC', ph: '155700000-2-2026', ayuda: 'RUC de la sociedad, tal como aparece en su aviso de operación y en el registro de la DGI.' },
+  { id: 'dv', label: 'D.V.', ph: '00', ayuda: 'Dígito verificador del RUC.' },
+  { id: 'nombre', label: 'Razón social', ph: 'Empresa Ejemplo, S.A.', ayuda: 'Nombre de la sociedad como está inscrita en el Registro Público.' },
+  { id: 'periodo', label: 'Período declarado', fijo: '2026', ayuda: 'Año fiscal que se declara (1 de enero al 31 de diciembre, salvo período especial autorizado).' },
+  { id: 'sistema', label: 'Sistema contable', opts: ['Devengado', 'Recibido'], ayuda: 'Devengado: registra ingresos y gastos cuando se causan, aunque no se hayan cobrado o pagado. Es el que usan casi todas las sociedades. Recibido (o de caja): solo cuando entra o sale el dinero.' },
+  { id: 'tarifa', label: 'Tarifa ISR', opts: ['25 % Regular', '27.5 %', '30 %'], ayuda: '25 % es la tarifa general de las personas jurídicas (art. 699 del Código Fiscal). Las otras tarifas aplican a actividades especiales previstas en la ley (por ejemplo, ciertas empresas donde el Estado tiene participación o servicios regulados). En la práctica, use 25 %.' },
+  { id: 'present', label: 'Tipo de presentación', opts: ['Original', 'Rectificativa'], ayuda: 'Original: la primera declaración del año. Rectificativa: corrige una ya presentada.' },
+  { id: 'sociedad', label: 'Tipo de sociedad', opts: ['Sociedad Anónima', 'Responsabilidad Limitada', 'Sociedad Civil', 'Sociedad Colectiva', 'Sociedad en Comandita Simple', 'Soc. en Comandita por Acciones', 'Cooperativa', 'Fundación de interés privado', 'Fundación sin fines de lucro', 'Sociedad de Emprendimiento'], ayuda: 'Forma jurídica de la empresa según su pacto social.' },
+  { id: 'nocair', label: 'Solicitud de NO aplicación CAIR', check: true, ayuda: 'Márquela solo si la empresa pidió a la DGI no aplicar el CAIR porque le causa pérdida o una tasa efectiva mayor a la tarifa (art. 699, parágrafo 1). Si la marca, el formulario no calcula el método alterno.' }
+];
+const RJ_LIN = [
+  { s: 'Ingresos' },
+  { n: 1, t: 'Ventas y prestación de servicios', anx: 'ven', a: 'Se llena con el anexo 90 (detalle de formas de ventas): el total de ventas de mercancía y de servicios del año, antes de devoluciones.' },
+  { n: 2, t: 'Honorarios por comisiones', in: 1, a: 'Comisiones ganadas. Si la empresa es comisionista y desembolsa a terceros, se detalla en el anexo 71.' },
+  { n: 3, t: 'Honorarios por servicios profesionales', in: 1, a: 'Ingresos por servicios profesionales que presta la sociedad.' },
+  { n: 4, t: 'Operaciones con Cías. Asociadas - Local', in: 1, a: 'Ingresos por operaciones con compañías del mismo grupo en Panamá.' },
+  { n: 5, t: 'Operaciones con Partes Relacionadas - Exterior (art. 762-D, C.F.)', in: 1, a: 'Ingresos por operaciones con partes relacionadas en el exterior. Están sujetas al régimen de precios de transferencia (Informe 930).' },
+  { n: 6, t: 'Operaciones con Partes Relacionadas - Con Zonas Francas (art. 762-L, C.F.)', in: 1, a: 'Ingresos por operaciones con partes relacionadas ubicadas en zonas francas o regímenes especiales.' },
+  { n: 7, t: 'Operaciones con Partes Relacionadas - Local (art. 762-L, C.F.)', in: 1, a: 'Ingresos por operaciones con partes relacionadas locales.' },
+  { n: 8, t: 'Ingresos por factoring', in: 1, a: 'Ingresos de empresas de factoring por la compra de facturas. Se detallan en el anexo 92.' },
+  { n: 9, t: 'Transporte (art. 694 literal c, C.F.)', in: 1, a: 'Ingresos por transporte internacional según el art. 694, literal c.' },
+  { n: 10, t: 'Cinematografía y audiovisual Ley 16/2012', in: 1, a: 'Ingresos de la industria cinematográfica y audiovisual con incentivos de la Ley 16 de 2012.' },
+  { n: 11, t: 'Alquiler habitacional', in: 1, a: 'Ingresos por alquiler de viviendas.' },
+  { n: 12, t: 'Alquiler comercial', in: 1, a: 'Ingresos por alquiler de locales, oficinas o bodegas.' },
+  { n: 13, t: 'Administración por fideicomiso', in: 1, a: 'Ingresos por administrar fideicomisos.' },
+  { n: 14, t: 'Intereses y otros ingresos financieros', in: 1, a: 'Intereses ganados y otros ingresos financieros. Si una parte es exenta (por ejemplo, intereses de cuentas de ahorro), regístrela también en el anexo 93 para restarla en la casilla 21.' },
+  { n: 15, t: 'Venta de bienes inmuebles', in: 1, a: 'Ingresos por venta de inmuebles cuando es parte del giro ordinario de la empresa.' },
+  { n: 16, t: 'Ingresos por donaciones Ley 186-2020', in: 1, a: 'Donaciones recibidas al amparo de la Ley 186 de 2020 (anexo 1127).' },
+  { n: 17, t: 'Otros ingresos', in: 1, a: 'Ingresos que no caben en las casillas anteriores (por ejemplo, venta de activo usado, ingresos varios).' },
+  { n: 18, t: 'Menos: devoluciones y descuentos (excepto descuentos de jubilados)', in: 1, a: 'Devoluciones de clientes y descuentos concedidos sobre ventas. Se restan.' },
+  { n: 19, t: 'Menos: descuentos jubilados - farmacia (Ley 6-1987)', in: 1, a: 'Descuentos a jubilados en farmacias según la Ley 6 de 1987. Se restan.' },
+  { n: 20, t: 'Total de ingresos', f: 'Suma de 1 a 17, menos 18 y 19.', a: 'Se calcula sola. Este total decide si la empresa entra en el CAIR (más de B/.1,500,000).' },
+  { n: 21, t: 'Menos: ingresos exentos (literales f, l y n)', anx: 'exe', a: 'Se llena con el anexo 93: ingresos exentos del art. 708 por valores del Estado (literal f), cuentas de ahorro (literal l) y regalías de zonas libres (literal n).' },
+  { n: 22, t: 'Otros ingresos exentos', anx: 'exe', a: 'Se llena con el anexo 93: los demás ingresos exentos del art. 708 (comercio marítimo, herencias, agropecuaria, etc.).' },
+  { n: 23, t: 'Ingresos no gravables', in: 1, a: 'Ingresos que no están sujetos al impuesto por su naturaleza (por ejemplo, dividendos recibidos que ya pagaron su impuesto).' },
+  { n: 24, t: 'Ingresos por intereses exentos por financiamiento', in: 1, a: 'Intereses exentos por préstamos a actividades con incentivo (agropecuario, Casco Viejo, turismo). Se detallan en el anexo 77.' },
+  { n: 25, t: 'Fuente extranjera', in: 1, a: 'Ingresos de fuente extranjera. Panamá aplica territorialidad: no pagan ISR.' },
+  { n: 26, t: 'Total de ingresos gravables', f: 'Casilla 20 menos 21 a 25.', a: 'Se calcula sola: lo que queda sujeto al impuesto.' },
+  { s: 'Costos' },
+  { n: 27, t: 'Inventario inicial', in: 1, a: 'Inventario final del año anterior (debe coincidir con la casilla 34 de la declaración anterior).' },
+  { n: 28, t: 'Compras - Local', in: 1, a: 'Compras de mercancía o materia prima en Panamá.' },
+  { n: 29, t: 'Compras - Exterior', in: 1, a: 'Importaciones de mercancía o materia prima. No incluye mercancía en tránsito.' },
+  { n: 30, t: 'Operaciones con Cías. Asociadas - Local', in: 1, a: 'Compras a compañías del mismo grupo en Panamá.' },
+  { n: 31, t: 'Partes relacionadas - Exterior (art. 762-D, C.F.)', in: 1, a: 'Compras a partes relacionadas del exterior (precios de transferencia).' },
+  { n: 32, t: 'Partes relacionadas - Con Zonas Francas (art. 762-L, C.F.)', in: 1, a: 'Compras a partes relacionadas en zonas francas.' },
+  { n: 33, t: 'Partes relacionadas - Local (art. 762-L, C.F.)', in: 1, a: 'Compras a partes relacionadas locales.' },
+  { n: 34, t: 'Inventario final', in: 1, a: 'Inventario físico al 31 de diciembre, valorizado con un método autorizado (arts. 65 y 66 del D.E. 170 de 1993). Se resta del costo y pasa sola a la casilla 155 del balance.' },
+  { n: 35, t: 'Otros costos', anx: 'cg', a: 'Se llena con el anexo 72: las filas con tipo de pago COSTOS (mantenimiento, electricidad, seguro, etc. ligados a la producción).' },
+  { n: 36, t: 'Total de costos', f: '27 + 28 a 33 − 34 + 35.', a: 'Se calcula sola: inventario inicial más compras, menos inventario final, más otros costos.' },
+  { n: 37, t: 'Menos: costos exentos (literales f y l)', in: 1, a: 'Costos ligados a los ingresos exentos de los literales f y l. Si no se pueden identificar, se calculan en proporción.' },
+  { n: 38, t: 'Otros costos exentos', in: 1, a: 'Costos ligados a otros ingresos exentos.' },
+  { n: 39, t: 'Costos no deducibles', in: 1, a: 'Costos que la ley no permite deducir.' },
+  { n: 40, t: 'Fuente extranjera', in: 1, a: 'Costos ligados a ingresos de fuente extranjera.' },
+  { n: 41, t: 'Total de costos deducibles', f: '36 − 37 a 40.', a: 'Se calcula sola.' },
+  { s: 'Gastos' },
+  { n: 42, t: 'Salarios y otras remuneraciones', in: 1, a: 'Salarios, XIII mes, vacaciones y demás remuneraciones del personal. Deben coincidir con las planillas de la CSS.' },
+  { n: 43, t: 'Prestaciones laborales', in: 1, a: 'Cuotas patronales de CSS, seguro educativo, riesgo profesional, prima de antigüedad e indemnización.' },
+  { n: 44, t: 'Gastos de representación', anx: 'cg', a: 'Se llena con el anexo 72 (concepto GASTOS DE REPRESENTACIÓN): lo pagado a directivos o ejecutivos como gasto de representación.' },
+  { n: 45, t: 'Dietas', anx: 'cg', a: 'Se llena con el anexo 72 (concepto DIETAS): lo pagado a directores por asistir a juntas.' },
+  { n: 46, t: 'Alquileres', anx: 'cg', a: 'Se llena con el anexo 72 (concepto ALQUILERES): el detalle de cada arrendador.' },
+  { n: 47, t: 'Transporte', anx: 'cg', a: 'Se llena con el anexo 72 (concepto TRANSPORTE): fletes y acarreos.' },
+  { n: 48, t: 'Operaciones con Cías. Asociadas - Local', in: 1, a: 'Gastos pagados a compañías del mismo grupo en Panamá.' },
+  { n: 49, t: 'Partes relacionadas - Exterior (art. 762-D, C.F.)', in: 1, a: 'Gastos con partes relacionadas del exterior (precios de transferencia).' },
+  { n: 50, t: 'Partes relacionadas - Con Zonas Francas (art. 762-L, C.F.)', in: 1, a: 'Gastos con partes relacionadas en zonas francas.' },
+  { n: 51, t: 'Partes relacionadas - Local (art. 762-L, C.F.)', in: 1, a: 'Gastos con partes relacionadas locales.' },
+  { n: 52, t: 'Cuentas incobrables', in: 1, a: 'Provisión o castigo de cuentas malas, en los términos del art. 34 del D.E. 170 de 1993.' },
+  { n: 53, t: 'Cargos bancarios', in: 1, a: 'Comisiones y cargos por servicios bancarios.' },
+  { n: 54, t: 'Vigilancia y seguridad', in: 1, a: 'Servicios de seguridad y vigilancia.' },
+  { n: 55, t: 'Intereses y otros gastos financieros netos', anx: 'int', a: 'Se llena con el anexo 78: intereses de préstamos y otros gastos financieros, por acreedor. En préstamos garantizados con depósitos solo se deduce la diferencia.' },
+  { n: 56, t: 'Combustibles y lubricantes', in: 1, a: 'Combustible y lubricantes usados en la actividad.' },
+  { n: 57, t: 'Depreciación', in: 1, a: 'Depreciación del año de los activos usados para producir renta gravable (art. 49 del D.E. 170 de 1993).' },
+  { n: 58, t: 'Amortización (art. 60 D.E. 170/1993)', in: 1, a: 'Amortización de intangibles y gastos diferidos según el art. 60 del D.E. 170 de 1993.' },
+  { n: 59, t: 'Impuestos', in: 1, a: 'Impuestos que afectan la actividad (aviso de operación, municipales, etc.). No es deducible el impuesto sobre la renta ni las multas y recargos.' },
+  { n: 60, t: 'Honorarios por servicios profesionales y comisiones', anx: 'cg', a: 'Se llena con el anexo 72 (concepto HONORARIO X SERV. PROF. Y COMIS.): contador, abogado, consultores, comisionistas.' },
+  { n: 61, t: 'Gastos por factoring', anx: 'cg', a: 'Se llena con el anexo 72 (concepto GASTOS DE FACTORING): comisiones pagadas por vender facturas.' },
+  { n: 62, t: 'Donaciones al Estado', in: 1, a: 'Donaciones al Estado (D.E. 143 de 2005, art. 16, literal a). En e-Tax se detallan en el anexo de donaciones.' },
+  { n: 63, t: 'Donaciones (literales c y e del art. 16, D.E. 143/2005)', in: 1, a: 'Donaciones a partidos políticos (c) y a entidades de lucha contra el VIH (e).' },
+  { n: 64, t: 'Donaciones (literales b, d y f del art. 16, D.E. 143/2005)', in: 1, tope: 50000, a: 'Donaciones a instituciones educativas, de beneficencia y ONG. Máximo B/.50,000.' },
+  { n: 65, t: 'Donaciones Ley 186-2020', in: 1, a: 'Donaciones hechas al amparo de la Ley 186 de 2020.' },
+  { n: 66, t: 'Papelería y útiles de oficina', in: 1, a: 'Papelería, útiles y suministros de oficina.' },
+  { n: 67, t: 'Administración por fideicomiso', in: 1, a: 'Comisiones pagadas a un fiduciario.' },
+  { n: 68, t: 'Viajes', in: 1, a: 'Pasajes y hospedaje de viajes de trabajo.' },
+  { n: 69, t: 'Electricidad, agua y teléfono', anx: 'cg', a: 'Se llena con el anexo 72 (concepto ELECT., AGUA Y TEL) con tipo de pago GASTOS.' },
+  { n: 70, t: 'Prima de seguro', anx: 'cg', a: 'Se llena con el anexo 72 (concepto SEGURO) con tipo de pago GASTOS.' },
+  { n: 71, t: 'Publicidad y propaganda', in: 1, a: 'Anuncios, redes sociales, material publicitario.' },
+  { n: 72, t: 'Mantenimiento y reparaciones', anx: 'cg', a: 'Se llena con el anexo 72 (concepto MANTENIMIENTO) con tipo de pago GASTOS.' },
+  { n: 73, t: 'Distribución parcial de utilidades a socios', in: 1, a: 'Participación de utilidades pagada a trabajadores o socios que trabajan en la empresa, cuando la ley la admite como gasto.' },
+  { n: 74, t: 'Distribución total de utilidades a socios', in: 1, a: 'Igual que la anterior, cuando se distribuye el total. Úsela solo si aplica.' },
+  { n: 75, t: 'Viáticos', in: 1, a: 'Viáticos pagados al personal.' },
+  { n: 76, t: 'Otros gastos', in: 1, a: 'Gastos que no caben en las casillas anteriores. Si una parte no es deducible (multas, recargos), anótela también en la casilla 80.' },
+  { n: 77, t: 'Total de gastos', f: 'Suma de 42 a 76.', a: 'Se calcula sola.' },
+  { n: 78, t: 'Menos: gastos exentos (literales f y l)', in: 1, a: 'Gastos ligados a ingresos exentos de los literales f y l.' },
+  { n: 79, t: 'Otros gastos exentos', in: 1, a: 'Gastos ligados a otros ingresos exentos.' },
+  { n: 80, t: 'Gastos no deducibles', in: 1, a: 'Gastos registrados en libros que la ley no acepta: multas, recargos, intereses moratorios, el propio ISR, gastos sin factura.' },
+  { n: 81, t: 'Fuente extranjera', in: 1, a: 'Gastos ligados a ingresos de fuente extranjera.' },
+  { n: 82, t: 'Total de gastos deducibles', f: '77 − 78 a 81.', a: 'Se calcula sola.' },
+  { s: 'Renta gravable' },
+  { n: 83, t: 'Renta gravable', f: '26 − 41 − 82, si es positivo.', a: 'Se calcula sola: ingresos gravables menos costos y gastos deducibles.' },
+  { n: 84, t: 'Pérdida', f: 'Si el resultado anterior es negativo.', a: 'Se calcula sola. La pérdida se puede arrastrar a los 5 años siguientes.' },
+  { n: 85, t: 'Arrastre de pérdidas', in: 1, a: 'Parte de pérdidas de años anteriores que se deduce este año: 20 % de la pérdida por año, durante 5 años, sin pasar del 50 % de la renta gravable (art. 698-A del C.F.).' },
+  { n: 86, t: 'Reinversión Ley 3/86', in: 1, a: 'Incentivo por reinversión según la Ley 3 de 1986, con resolución (anexo 1012).' },
+  { n: 87, t: 'Renta de fideicomisos exentos autorizados por DGI', in: 1, a: 'Renta de fideicomisos que la DGI autorizó como exenta.' },
+  { n: 88, t: 'Industria cinematográfica Ley 16/2012', in: 1, a: 'Incentivo de la Ley 16 de 2012.' },
+  { n: 89, t: 'Discapacitados', in: 1, a: 'Deducción adicional por contratar personas con discapacidad (anexo 1015: cédula, resolución, salario y meses).' },
+  { n: 90, t: 'Otros incentivos', in: 1, a: 'Otros incentivos con fundamento legal (anexo 74).' },
+  { n: 91, t: 'Renta neta gravable', f: '83 − 85 a 90, si es positivo.', a: 'Se calcula sola. Sobre este monto se aplica la tarifa.' },
+  { n: 92, t: 'Pérdida neta', f: 'Si el resultado es negativo.', a: 'Se calcula sola.' },
+  { s: 'Liquidación del impuesto' },
+  { n: 93, t: 'Impuesto causado', f: 'Casilla 91 × tarifa (25 %).', a: 'Se calcula sola: renta neta gravable por la tarifa elegida en el encabezado.' },
+  { n: 94, t: 'Crédito por descuento a jubilados restaurantes (Ley 192-2020)', in: 1, a: 'Crédito fiscal por los descuentos a jubilados en restaurantes.' },
+  { n: 95, t: 'Imp. pagados por enajenación de bienes inmuebles (giro ordinario)', in: 1, a: 'Impuesto adelantado en la venta de inmuebles del giro ordinario.' },
+  { n: 96, t: 'Impuesto retenido (art. 762-M, C.F.)', in: 1, a: 'ISR retenido a la empresa según el art. 762-M.' },
+  { n: 97, t: 'Crédito por inversiones directas', in: 1, a: 'Crédito por inversión directa con resolución (anexo 952).' },
+  { n: 98, t: 'Crédito transporte internacional (art. 701 literal m)', in: 1, a: 'Crédito para empresas de transporte internacional.' },
+  { n: 99, t: 'Crédito declaración anterior', in: 1, a: 'En e-Tax lo carga el sistema: saldo a favor de años anteriores e impuesto estimado pagado durante el año. En la práctica, escríbalo según el caso.' },
+  { n: 100, t: 'Impuesto a pagar', f: '93 − 94 a 99, si es positivo.', a: 'Se calcula sola.' },
+  { n: 101, t: 'Impuesto a favor', f: 'Si los créditos superan el impuesto.', a: 'Se calcula sola. Se aplica primero contra el impuesto estimado (casilla 104).' },
+  { s: 'Liquidación del impuesto estimado' },
+  { n: 102, t: 'Renta neta gravable estimada', f: 'Igual a la casilla 91.', a: 'Se calcula sola: se estima que el año siguiente la renta será igual a la de este año (art. 710 del C.F.).' },
+  { n: 103, t: 'Impuesto estimado', f: '102 × tarifa.', a: 'Se calcula sola.' },
+  { n: 104, t: 'Menos: crédito de arrastre', f: 'El impuesto a favor (101), hasta el estimado.', a: 'Se calcula sola: el saldo a favor de este año se usa para pagar el estimado.' },
+  { n: 105, t: 'Crédito de ITBMS (Ley 52/2012)', in: 1, a: 'Crédito por ITBMS que la ley permite aplicar al estimado.' },
+  { n: 106, t: 'Impuesto estimado a pagar', f: '103 − 104 − 105, si es positivo.', a: 'Se calcula sola. Se paga en tres partidas: 30 de junio, 30 de septiembre y 31 de diciembre.' },
+  { n: 107, t: 'Impuesto estimado a favor', f: 'Si los créditos superan el estimado.', a: 'Se calcula sola.' },
+  { s: 'Método del cálculo alterno (CAIR) · ingresos mayores a B/.1,500,000' },
+  { n: 108, t: 'Ingresos gravables', f: 'Casilla 26, si el total de ingresos pasa de B/.1,500,000.', a: 'Se calcula sola. El CAIR solo aplica si el total de ingresos (casilla 20) supera B/.1,500,000 y no se marcó la solicitud de no aplicación.' },
+  { n: 109, t: 'Ingresos gravables (D.E. 48/2006, combustible)', in: 1, a: 'Ingresos por venta de combustible, que tienen un tratamiento especial en el CAIR. En la práctica, déjela en cero.' },
+  { n: 110, t: 'Imp. de combustible y derivados del petróleo', in: 1, a: 'Impuesto de combustible incluido en los ingresos. Normalmente cero.' },
+  { n: 111, t: 'Impuesto ISC', in: 1, a: 'Impuesto selectivo al consumo incluido en los ingresos. Normalmente cero.' },
+  { n: 112, t: 'Ingresos gravables netos', f: '108 − 110 − 111.', a: 'Se calcula sola.' },
+  { n: 113, t: 'Renta neta gravable (CAIR)', f: '112 × 4.67 %.', a: 'Se calcula sola: el CAIR supone que la renta es el 4.67 % de los ingresos gravables (art. 699 del C.F.).' },
+  { n: 114, t: 'Impuesto causado (CAIR)', f: '113 × tarifa.', a: 'Se calcula sola. La empresa paga el MAYOR entre este impuesto y el de la casilla 93.' },
+  { n: 115, t: 'Crédito por descuento a jubilados restaurantes', f: 'Igual a 94.', a: 'Se calcula sola.' },
+  { n: 116, t: 'Menos: imp. pagados por enajenación de inmuebles', f: 'Igual a 95.', a: 'Se calcula sola.' },
+  { n: 117, t: 'Menos: crédito transporte internacional', f: 'Igual a 98.', a: 'Se calcula sola.' },
+  { n: 118, t: 'Impuesto retenido (art. 762-M) [CAIR]', f: 'Igual a 96.', a: 'Se calcula sola.' },
+  { n: 119, t: 'Crédito declaración anterior', f: 'Igual a 99.', a: 'Se calcula sola.' },
+  { n: 120, t: 'Impuesto a pagar (CAIR)', f: '114 − 115 a 119, si es positivo.', a: 'Se calcula sola.' },
+  { n: 121, t: 'Impuesto a favor (CAIR)', f: 'Si los créditos superan el impuesto.', a: 'Se calcula sola.' },
+  { n: 122, t: 'Renta neta gravable estimada (CAIR)', f: 'Igual a 113.', a: 'Se calcula sola.' },
+  { n: 123, t: 'Impuesto estimado (CAIR)', f: '122 × tarifa.', a: 'Se calcula sola.' },
+  { n: 124, t: 'Menos: crédito de arrastre', f: 'El saldo a favor (121), hasta el estimado.', a: 'Se calcula sola.' },
+  { n: 125, t: 'Crédito de ITBMS (Ley 52/2012)', f: 'Igual a 105.', a: 'Se calcula sola.' },
+  { n: 126, t: 'Impuesto estimado a pagar (CAIR)', f: '123 − 124 − 125, si es positivo.', a: 'Se calcula sola.' },
+  { n: 127, t: 'Impuesto estimado a favor (CAIR)', f: 'Si los créditos superan el estimado.', a: 'Se calcula sola.' },
+  { s: 'Liquidación final del impuesto' },
+  { n: 128, t: 'Impuesto jurado a pagar', f: 'El mayor entre el método tradicional (100) y el CAIR (120).', a: 'Se calcula sola: si aplica el CAIR y su impuesto (114) es mayor que el tradicional (93), se toma el CAIR.' },
+  { n: 129, t: 'Impuesto jurado a favor', f: 'Del mismo método elegido.', a: 'Se calcula sola.' },
+  { n: 130, t: 'Impuesto estimado a pagar', f: 'Del mismo método elegido (106 o 126).', a: 'Se calcula sola.' },
+  { n: 131, t: 'Impuesto estimado a favor', f: 'Del mismo método elegido (107 o 127).', a: 'Se calcula sola.' },
+  { s: 'Liquidación final del impuesto estimado a pagar' },
+  { n: 132, t: 'ISR primera partida', f: '130 ÷ 3.', a: 'Se calcula sola. Vence el 30 de junio.' },
+  { n: 133, t: 'ISR segunda partida', f: '130 ÷ 3.', a: 'Se calcula sola. Vence el 30 de septiembre.' },
+  { n: 134, t: 'ISR tercera partida', f: '130 ÷ 3.', a: 'Se calcula sola. Vence el 31 de diciembre.' },
+  { s: 'Impuesto complementario' },
+  { n: 135, t: 'Renta neta gravable', f: 'Igual a 91.', a: 'Se calcula sola.' },
+  { n: 136, t: 'Renta neta exenta (literales f y l)', in: 1, a: 'Utilidad de los ingresos exentos de los literales f y l (ingresos exentos menos sus costos y gastos).' },
+  { n: 137, t: 'Renta neta extranjera', in: 1, a: 'Utilidad de las operaciones de fuente extranjera.' },
+  { n: 138, t: 'Más: ganancia de capital por venta de inmuebles/muebles', in: 1, a: 'Ganancia en venta de inmuebles o muebles fuera del giro ordinario.' },
+  { n: 139, t: 'Ganancia de capital por venta de valores', in: 1, a: 'Ganancia en venta de acciones u otros valores.' },
+  { n: 140, t: 'Menos: impuesto pagado por venta de inmuebles/muebles', in: 1, a: 'Impuesto ya pagado sobre esa ganancia.' },
+  { n: 141, t: 'Impuesto pagado por venta de valores', in: 1, a: 'Impuesto ya pagado sobre la venta de valores.' },
+  { n: 142, t: 'Impuesto complementario', f: '10 % del 40 % de (135 − impuesto causado) + 5 % del 40 % de (136 + 137).', a: 'Se calcula sola. Es un adelanto del impuesto de dividendos cuando la empresa no reparte al menos el 40 % de su utilidad (art. 733 del C.F.): 10 % para renta local y 5 % para renta exenta o extranjera. Cálculo simplificado para la práctica.' },
+  { n: 143, t: 'Menos: impuesto pagado sobre dividendos', in: 1, a: 'Impuesto de dividendos ya retenido y pagado en el año por dividendos repartidos.' },
+  { n: 144, t: 'Impuesto complementario a pagar', f: '142 − 143, si es positivo.', a: 'Se calcula sola.' },
+  { s: 'Activos' },
+  { n: 145, t: 'Efectivo y efectos de caja', in: 1, a: 'Caja y bancos al 31 de diciembre.' },
+  { n: 146, t: 'Cuentas por cobrar', in: 1, a: 'Cuentas por cobrar a clientes.' },
+  { n: 147, t: 'Cuentas por cobrar a otros', in: 1, a: 'Otras cuentas por cobrar (empleados, adelantos, etc.).' },
+  { n: 148, t: 'Cuentas por cobrar accionistas y Cías. asociadas - Local', in: 1, a: 'Por cobrar a accionistas o empresas del grupo en Panamá.' },
+  { n: 149, t: 'Cuentas por cobrar accionistas y Cías. asociadas - Exterior', in: 1, a: 'Por cobrar a accionistas o empresas del grupo en el exterior.' },
+  { n: 150, t: 'Préstamos por cobrar accionistas y Cías. asociadas - Local', in: 1, a: 'Préstamos otorgados a accionistas o empresas del grupo en Panamá.' },
+  { n: 151, t: 'Préstamos por cobrar accionistas y Cías. asociadas - Exterior', in: 1, a: 'Préstamos a accionistas o empresas del grupo en el exterior.' },
+  { n: 152, t: 'Préstamos por cobrar - Local', in: 1, a: 'Otros préstamos por cobrar en Panamá.' },
+  { n: 153, t: 'Préstamos por cobrar - Exterior', in: 1, a: 'Otros préstamos por cobrar en el exterior.' },
+  { n: 154, t: 'Menos: reserva para cuentas malas', in: 1, a: 'Provisión acumulada para cuentas incobrables. Se resta.' },
+  { n: 155, t: 'Inventario', f: 'Igual a la casilla 34.', a: 'Se calcula sola con el inventario final.' },
+  { n: 156, t: 'Edificios y mejoras', in: 1, a: 'Costo de edificios y mejoras.' },
+  { n: 157, t: 'Terrenos', in: 1, a: 'Costo de terrenos (no se deprecian).' },
+  { n: 158, t: 'Maquinaria y equipos', in: 1, a: 'Costo de maquinaria, equipo y vehículos.' },
+  { n: 159, t: 'Mobiliario y enseres', in: 1, a: 'Costo de muebles y equipo de oficina.' },
+  { n: 160, t: 'Menos: depreciación acumulada', in: 1, a: 'Depreciación acumulada de los activos fijos. Se resta.' },
+  { n: 161, t: 'Otros activos', in: 1, a: 'Depósitos en garantía, gastos pagados por adelantado, intangibles, etc.' },
+  { n: 162, t: 'Total de activos', f: '145 a 153 − 154 + 155 a 159 − 160 + 161.', a: 'Se calcula sola. Debe ser igual a pasivos (174) más patrimonio (189).' },
+  { s: 'Pasivos' },
+  { n: 163, t: 'Cuentas por pagar', in: 1, a: 'Cuentas por pagar a proveedores locales.' },
+  { n: 164, t: 'Cuentas por pagar - Exterior', in: 1, a: 'Cuentas por pagar a proveedores del exterior.' },
+  { n: 165, t: 'Cuentas por pagar a accionistas y Cías. asociadas - Local', in: 1, a: 'Por pagar a accionistas o empresas del grupo en Panamá.' },
+  { n: 166, t: 'Cuentas por pagar a accionistas y Cías. asociadas - Exterior', in: 1, a: 'Por pagar a accionistas o empresas del grupo en el exterior.' },
+  { n: 167, t: 'Cuentas por pagar casa matriz o filial en el exterior', in: 1, a: 'Saldos con la casa matriz o filiales en el exterior.' },
+  { n: 168, t: 'Préstamos por pagar - Local', in: 1, a: 'Préstamos bancarios y de terceros en Panamá.' },
+  { n: 169, t: 'Préstamos por pagar - Exterior', in: 1, a: 'Préstamos recibidos del exterior.' },
+  { n: 170, t: 'Préstamo por pagar a accionistas y Cías. asociadas - Local', in: 1, a: 'Préstamos de accionistas o empresas del grupo en Panamá.' },
+  { n: 171, t: 'Préstamo por pagar a accionistas y Cías. asociadas - Exterior', in: 1, a: 'Préstamos de accionistas o empresas del grupo en el exterior.' },
+  { n: 172, t: 'Reservas para prestaciones laborales', in: 1, a: 'Reserva de prima de antigüedad e indemnización.' },
+  { n: 173, t: 'Otros pasivos', in: 1, a: 'Impuestos por pagar, cuotas CSS por pagar, ingresos diferidos, etc.' },
+  { n: 174, t: 'Total de pasivos', f: 'Suma de 163 a 173.', a: 'Se calcula sola.' },
+  { s: 'Análisis del superávit' },
+  { n: 175, t: 'Superávit acumulado inicial', in: 1, a: 'Utilidades retenidas al inicio del año (el superávit final de la declaración anterior).' },
+  { n: 176, t: 'Ganancia neta', f: 'Renta gravable (83) menos el impuesto causado.', a: 'Se calcula sola en la práctica. En la empresa real debe coincidir con la utilidad neta de los estados financieros.' },
+  { n: 177, t: 'Déficit acumulado inicial', in: 1, a: 'Pérdidas acumuladas al inicio del año, si las hay.' },
+  { n: 178, t: 'Pérdida neta', f: 'Igual a la casilla 84.', a: 'Se calcula sola.' },
+  { n: 179, t: 'Ganancia de capital (inmuebles, muebles y valores)', in: 1, a: 'Ganancia de capital del año que se suma al superávit.' },
+  { n: 180, t: 'Menos: dividendos distribuidos durante el período', in: 1, a: 'Dividendos declarados o pagados a los accionistas en el año.' },
+  { n: 181, t: 'Superávit de reevaluación y otros ajustes', in: 1, a: 'Revaluaciones y otros ajustes al patrimonio.' },
+  { n: 182, t: 'Otros cargos contra el superávit', in: 1, a: 'Otros cargos directos al superávit.' },
+  { n: 183, t: 'Total del superávit', f: '175 + 176 − 177 − 178 + 179 − 180 + 181 − 182.', a: 'Se calcula sola.' },
+  { s: 'Patrimonio' },
+  { n: 184, t: 'Acciones comunes', in: 1, a: 'Capital pagado en acciones comunes.' },
+  { n: 185, t: 'Acciones preferidas', in: 1, a: 'Capital en acciones preferidas.' },
+  { n: 186, t: 'Acciones sin valor nominal', in: 1, a: 'Capital en acciones sin valor nominal.' },
+  { n: 187, t: 'Superávit', f: 'La casilla 183, si es positiva.', a: 'Se calcula sola.' },
+  { n: 188, t: 'Déficit', f: 'La casilla 183, si es negativa.', a: 'Se calcula sola.' },
+  { n: 189, t: 'Total de patrimonio', f: '184 + 185 + 186 + 187 − 188.', a: 'Se calcula sola.' },
+  { s: 'Aviso de operación' },
+  { n: 190, t: 'Patrimonio sujeto de aviso de operación', f: 'Igual a 189.', a: 'Se calcula sola: el capital con que opera la empresa.' },
+  { n: 191, t: 'Impuesto a pagar aviso de operación empresas', f: '2 % de 190, mínimo B/.100 y máximo B/.60,000.', a: 'Se calcula sola: tasa anual del aviso de operación (Ley 5 de 2007).' }
+];
+
+/* ---- Anexos de la renta jurídica ---- */
+const TPJ = ['', 'NATURAL', 'JURÍDICO', 'EXTRANJERO'];
+const AJ = {
+  ven: { cod: '90v0', titulo: 'Detalle de formas de ventas', casillas: 'casilla 1',
+    intro: 'Una fila por cada forma de venta. El total pasa a la casilla 1.',
+    cols: [ { k: 'tipo', t: 'Tipo venta', opts: ['', 'VENTAS AL CONTADO', 'VENTAS AL CRÉDITO', 'PRESTACIÓN DE SERVICIOS'], a: 'Forma en que se vendió. En la práctica: contado, crédito o servicios. Confirme en e-Tax la lista exacta de su versión.' },
+            { k: 'monto', t: 'Monto', num: true, a: 'Total del año para esa forma de venta.' } ],
+    totales(rows){ const t = r2(rows.reduce((s, x) => s + (+x.monto || 0), 0)); return { lineas: [['Total de ventas', t]], c: { 1: t } }; } },
+  cg: { cod: '72v2', titulo: 'Detalle de costos y gastos', casillas: 'casillas 35, 44 a 47, 60, 61, 69, 70 y 72',
+    intro: 'Una fila por proveedor y concepto. Elija si es COSTO (ligado a la producción) o GASTO (administración y ventas). Cada concepto va a su casilla.',
+    cols: [ { k: 'tp', t: 'Tipo persona', opts: TPJ, a: 'NATURAL si el proveedor es una persona; JURÍDICO si es una empresa.' },
+            { k: 'ruc', t: 'RUC', a: 'RUC o cédula del proveedor.' },
+            { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador del proveedor.' },
+            { k: 'nom', t: 'Nombre contribuyente', a: 'Nombre del proveedor (no el de la empresa que declara).' },
+            { k: 'pago', t: 'Tipo pago', opts: ['GASTOS', 'COSTOS'], a: 'COSTOS: forma parte del costo de lo vendido (casilla 35). GASTOS: va a la casilla del concepto.' },
+            { k: 'con', t: 'Concepto', opts: ['', 'GASTOS DE REPRESENTACIÓN', 'DIETAS', 'ALQUILERES', 'TRANSPORTE', 'MANTENIMIENTO', 'HONORARIO X SERV. PROF. Y COMIS.', 'ELECT., AGUA Y TEL', 'SEGURO', 'GASTOS DE FACTORING'], a: 'Tipo de gasto. Representación → 44, dietas → 45, alquileres → 46, transporte → 47, honorarios → 60, factoring → 61, electricidad → 69, seguro → 70, mantenimiento → 72.' },
+            { k: 'monto', t: 'Monto', num: true, a: 'Total pagado en el año a ese proveedor por ese concepto.' },
+            { k: 'per', t: 'Período', opts: ['ACTUAL', 'ANTERIOR'], a: 'Período al que corresponde el gasto. Normalmente el actual.' } ],
+    totales(rows){
+      const MAP = { 'GASTOS DE REPRESENTACIÓN': 44, 'DIETAS': 45, 'ALQUILERES': 46, 'TRANSPORTE': 47, 'HONORARIO X SERV. PROF. Y COMIS.': 60, 'GASTOS DE FACTORING': 61, 'ELECT., AGUA Y TEL': 69, 'SEGURO': 70, 'MANTENIMIENTO': 72 };
+      const c = { 35: 0, 44: 0, 45: 0, 46: 0, 47: 0, 60: 0, 61: 0, 69: 0, 70: 0, 72: 0 };
+      rows.forEach(x => { const m = +x.monto || 0; if (!m) return; if (x.pago === 'COSTOS') c[35] += m; else if (MAP[x.con]) c[MAP[x.con]] += m; });
+      Object.keys(c).forEach(k => c[k] = r2(c[k]));
+      const lineas = [['Costos (casilla 35)', c[35]]].concat([[44, 'Representación'], [45, 'Dietas'], [46, 'Alquileres'], [47, 'Transporte'], [60, 'Honorarios'], [61, 'Factoring'], [69, 'Electricidad, agua y tel.'], [70, 'Seguro'], [72, 'Mantenimiento']].filter(([n]) => c[n]).map(([n, t]) => [`Gastos-${t} (casilla ${n})`, c[n]]));
+      return { lineas, c }; } },
+  int: { cod: '78v0', titulo: 'Detalle de interés y otros gastos financieros netos', casillas: 'casilla 55',
+    intro: 'Una fila por cada acreedor (banco, financiera o persona). El total pasa a la casilla 55.',
+    cols: [ { k: 'tp', t: 'Tipo persona', opts: TPJ, a: 'Tipo de acreedor.' },
+            { k: 'ruc', t: 'RUC', a: 'RUC del acreedor.' },
+            { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador.' },
+            { k: 'nom', t: 'Nombre o razón social', a: 'Nombre del banco o acreedor.' },
+            { k: 'int', t: 'Interés sobre capital', num: true, a: 'Intereses pagados o causados en el año.' },
+            { k: 'gf', t: 'Gastos financieros', num: true, a: 'Comisiones de manejo, cargos por el préstamo y otros gastos financieros.' },
+            { k: 'dest', t: 'Destino', opts: ['LOCAL', 'EXTRANJERO'], a: 'Si el acreedor es local o del exterior. Al acreedor del exterior se le debe retener ISR sobre los intereses.' } ],
+    totales(rows){ const t = r2(rows.reduce((s, x) => s + (+x.int || 0) + (+x.gf || 0), 0)); return { lineas: [['Total de intereses y gastos', t]], c: { 55: t } }; } },
+  exe: { cod: '93v2', titulo: 'Detalle de ingresos exentos (art. 708 del Código Fiscal)', casillas: 'casillas 21 y 22',
+    intro: 'Una fila por cada ingreso exento. Los literales F, L y N van a la casilla 21; los demás, a la 22.',
+    cols: [ { k: 'con', t: 'Concepto', opts: ['', 'LITERAL E - COMERCIO MARITIMO INTERNACIONAL', 'LITERAL F - VALORES EMITIDOS POR EL ESTADO', 'LITERAL I - HERENCIA, LEGADO O DONACION', 'LITERAL L - INGRESOS POR CUENTAS DE AHORRO BANCARIAS', 'LITERAL N - REGALIAS DE ZONAS LIBRES PAGADAS A PERSONAS EN EL EXTERIOR', 'LITERAL Ñ - INTERESES SOBRE PRESTAMOS PARA CONSTRUCCION DE VIVIENDAS DE INTERES SOCIAL', 'LITERAL S - ACTIVIDAD AGROPECUARIA', 'LITERAL U - RECOMPENSAS POR DENUNCIAS FISCALES', 'OTROS - AJUSTES DE RESERVAS Y CUENTAS VARIAS', 'OTROS', 'OTROS INGRESOS EXENTOS - ARTÍCULO 60'], a: 'Literal del art. 708 que hace exento el ingreso. Ejemplo común: intereses de cuentas de ahorro (literal L).' },
+            { k: 'tp', t: 'Tipo persona', opts: TPJ, a: 'Quién pagó el ingreso.' },
+            { k: 'ruc', t: 'RUC', a: 'RUC de quien pagó (por ejemplo, el banco).' },
+            { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador.' },
+            { k: 'nom', t: 'Nombre o razón social', a: 'Nombre de quien pagó.' },
+            { k: 'monto', t: 'Monto', num: true, a: 'Ingreso exento del año.' } ],
+    totales(rows){ let a = 0, b = 0; rows.forEach(x => { const m = +x.monto || 0; if (/^LITERAL (F|L|N) /.test(x.con || '')) a += m; else if (x.con) b += m; }); a = r2(a); b = r2(b); return { lineas: [['Literales F, L y N (casilla 21)', a], ['Otros exentos (casilla 22)', b]], c: { 21: a, 22: b } }; } }
+};
+let AJD = { ven: [], cg: [], int: [], exe: [] }, AJ_AB = null, AJ_TMP = [];
+function ajFila(k){ const f = {}; AJ[k].cols.forEach(c => f[c.k] = c.opts ? c.opts[0] : ''); return f; }
+function ajCasillas(d){ const c = {}; Object.keys(AJ).forEach(k => Object.assign(c, AJ[k].totales((d || AJD)[k] || []).c)); return c; }
+function ajAbrir(k){
+  AJ_AB = k; AJ_TMP = (AJD[k] || []).map(x => ({ ...x })); if (!AJ_TMP.length) AJ_TMP = [ajFila(k)];
+  const A = AJ[k];
+  $('#ajTit').innerHTML = `<div style="text-align:center;font-weight:700;color:var(--brand)">ANEXO DE PRÁCTICA ${esc(A.cod)}<br>${esc(A.titulo.toUpperCase())}</div><div class="hint" style="text-align:center">Alimenta la${A.casillas.startsWith('casillas') ? 's' : ''} ${esc(A.casillas)} · Sin valor fiscal</div>`;
+  const cs = rjCasoActivo(), dat = cs && cs.entrada && cs.entrada.anx && cs.entrada.anx[k];
+  $('#ajCaso').innerHTML = cs ? `<div class="msg warn" style="text-align:justify"><b>Datos del caso · ${esc(cs.titulo)}</b><br>${esc(cs.texto)}${dat && cs.auto ? '<div class="row" style="margin-top:8px"><button class="btn small" type="button" id="ajEjemplo">Llenar este anexo con los datos del ejemplo</button></div>' : ''}</div>` : '';
+  $('#ajIntro').textContent = A.intro;
+  $('#ajAyudas').innerHTML = A.cols.map(c => `<div class="rtayuda hidden" id="aja_${c.k}"><b>${esc(c.t)}.</b> ${esc(c.a)}</div>`).join('');
+  ajRender(); $('#ajOverlay').classList.remove('hidden');
+}
+function ajRender(){
+  const A = AJ[AJ_AB];
+  $('#ajHead').innerHTML = '<tr>' + A.cols.map(c => `<th style="${c.w ? 'width:' + c.w + 'px' : ''}">${esc(c.t)} <button type="button" class="rti" data-aja="${c.k}" aria-label="Ayuda">i</button></th>`).join('') + '<th></th></tr>';
+  $('#ajBody').innerHTML = AJ_TMP.map((f, i) => '<tr>' + A.cols.map(c => `<td>${c.opts ? `<select data-ji="${i}" data-jk="${c.k}" style="min-width:${c.k === 'con' && AJ_AB === 'exe' ? 300 : 130}px">${c.opts.map(o => `<option ${o === f[c.k] ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>` : `<input data-ji="${i}" data-jk="${c.k}" value="${esc(f[c.k] ?? '')}" ${c.num ? 'type="number" step="0.01" min="0" style="text-align:right;min-width:100px"' : `style="min-width:${c.w ? 50 : 120}px"`}>`}</td>`).join('') + `<td><button type="button" class="btn small danger" data-jdel="${i}" aria-label="Quitar fila">×</button></td></tr>`).join('');
+  ajTotales();
+}
+function ajTotales(){ const t = AJ[AJ_AB].totales(AJ_TMP); $('#ajTot').innerHTML = t.lineas.map(([a, b]) => `<div><span>${esc(a)}</span><span>${money(b)}</span></div>`).join(''); }
+document.addEventListener('input', e => { const i = e.target.dataset && e.target.dataset.ji; if (i == null) return; AJ_TMP[+i][e.target.dataset.jk] = e.target.value; ajTotales(); });
+document.addEventListener('change', e => { const i = e.target.dataset && e.target.dataset.ji; if (i == null) return; AJ_TMP[+i][e.target.dataset.jk] = e.target.value; ajTotales(); });
+document.addEventListener('click', e => {
+  const d = e.target.dataset || {};
+  if (d.ajanx) ajAbrir(d.ajanx);
+  if (d.jdel != null){ AJ_TMP.splice(+d.jdel, 1); if (!AJ_TMP.length) AJ_TMP = [ajFila(AJ_AB)]; ajRender(); }
+  if (d.aja != null) $('#aja_' + d.aja).classList.toggle('hidden');
+  if (e.target.id === 'ajEjemplo'){ AJ_TMP = rjCasoActivo().entrada.anx[AJ_AB].map(x => ({ ...x })); ajRender(); }
+  if (e.target.id === 'ajAdd'){ AJ_TMP.push(ajFila(AJ_AB)); ajRender(); }
+  if (e.target.id === 'ajGuardar'){ AJD[AJ_AB] = AJ_TMP.filter(f => Object.keys(f).some(k => !['tp', 'pago', 'per', 'dest'].includes(k) && f[k])); $('#ajOverlay').classList.add('hidden'); rjCalc(); }
+  if (e.target.id === 'ajCancelar' || e.target.id === 'ajOverlay') $('#ajOverlay').classList.add('hidden');
+});
+
+/* ---- Formulario ---- */
+let RJ_LISTO = false, RJ_CASO = '', RJ_OCULTO = false;
+function rjRender(){
+  $('#rjCab').innerHTML = RJ_CAB.map(c => {
+    let ctl;
+    if (c.fijo) ctl = `<input id="rjc_${c.id}" value="${esc(c.fijo)}" disabled>`;
+    else if (c.opts) ctl = `<select id="rjc_${c.id}">${c.opts.map(o => `<option>${esc(o)}</option>`).join('')}</select>`;
+    else if (c.check) ctl = `<input id="rjc_${c.id}" type="checkbox" style="width:auto">`;
+    else ctl = `<input id="rjc_${c.id}" placeholder="${esc(c.ph || '')}">`;
+    return `<div><label>${esc(c.label)} <button type="button" class="rti" data-ajc="${c.id}" aria-label="Ayuda">i</button></label>${ctl}<div class="rtayuda hidden" id="ajc_${c.id}">${esc(c.ayuda)}</div></div>`;
+  }).join('');
+  $('#rjBody').innerHTML = RJ_LIN.map(l => {
+    if (l.s) return `<tr class="rtsec"><td colspan="4">${esc(l.s)}</td></tr>`;
+    let ctl;
+    if (l.anx) ctl = `<div class="row" style="gap:6px;flex-wrap:nowrap"><button type="button" class="btn small secondary" data-ajanx="${l.anx}" style="white-space:nowrap">Anexo ${AJ[l.anx].cod.replace(/v\d$/, '')}</button><input id="rj_${l.n}" class="rtauto" disabled style="text-align:right"></div>`;
+    else if (!l.in) ctl = `<input id="rj_${l.n}" class="rtauto" disabled style="text-align:right">`;
+    else ctl = `<input id="rj_${l.n}" type="number" step="0.01" min="0" placeholder="0.00" style="text-align:right">`;
+    const tag = l.anx ? ' <span class="pill info" style="font-size:10.5px">desde el anexo</span>' : !l.in ? ' <span class="pill info" style="font-size:10.5px">se calcula solo</span>' : '';
+    return `<tr><td class="rtlab">${esc(l.t)}${tag}</td><td class="rtnum">${l.n}</td><td style="width:34px"><button type="button" class="rti" data-ajl="${l.n}" aria-label="Ayuda de la casilla ${l.n}">i</button></td><td style="width:260px">${ctl}<div class="hint" id="rjw_${l.n}"></div></td></tr>
+      <tr class="rjayuda-row hidden" id="ajl_${l.n}"><td colspan="4"><div class="rtayuda"><b>Casilla ${l.n} · ${esc(l.t)}.</b> ${esc(l.a)}${l.f ? `<br><span class="hint">Cálculo: ${esc(l.f)}</span>` : ''}</div></td></tr>`;
+  }).join('');
+}
+const rjv = n => { const el = $('#rj_' + n); return el ? Math.max(0, parseFloat(el.value) || 0) : 0; };
+function rjLeer(){
+  const cab = {}; RJ_CAB.forEach(c => { const el = $('#rjc_' + c.id); cab[c.id] = c.check ? el.checked : el.value.trim(); });
+  const v = {}; RJ_LIN.forEach(l => { if (l.in) v[l.n] = rjv(l.n); });
+  return { cab, v, anx: JSON.parse(JSON.stringify(AJD)) };
+}
+function rjTasa(cab){ return cab.tarifa && cab.tarifa.startsWith('30') ? 0.30 : cab.tarifa && cab.tarifa.startsWith('27.5') ? 0.275 : 0.25; }
+const sumN = (L, a, b) => { let s = 0; for (let i = a; i <= b; i++) s += L[i] || 0; return r2(s); };
+function rjResolver(d){
+  const v = d.v, L = {}, T = rjTasa(d.cab);
+  RJ_LIN.forEach(l => { if (l.in) L[l.n] = v[l.n] || 0; });
+  Object.assign(L, ajCasillas(d.anx));
+  L[64] = Math.min(L[64], 50000);
+  L[20] = r2(sumN(L, 1, 17) - L[18] - L[19]);
+  L[26] = Math.max(0, r2(L[20] - sumN(L, 21, 25)));
+  L[36] = r2(L[27] + sumN(L, 28, 33) - L[34] + L[35]);
+  L[41] = r2(L[36] - sumN(L, 37, 40));
+  L[77] = sumN(L, 42, 76);
+  L[82] = r2(L[77] - sumN(L, 78, 81));
+  const rg = r2(L[26] - L[41] - L[82]); L[83] = Math.max(rg, 0); L[84] = Math.max(-rg, 0);
+  const rn = r2(L[83] - sumN(L, 85, 90)); L[91] = Math.max(rn, 0); L[92] = Math.max(-rn, 0) || L[84];
+  L[93] = r2(L[91] * T);
+  const liq = r2(L[93] - sumN(L, 94, 99)); L[100] = Math.max(liq, 0); L[101] = Math.max(-liq, 0);
+  L[102] = L[91]; L[103] = r2(L[102] * T); L[104] = Math.min(L[101], L[103]);
+  const est = r2(L[103] - L[101] - L[105]); L[106] = Math.max(est, 0); L[107] = Math.max(-est, 0);
+  const cair = L[20] > 1500000 && !d.cab.nocair;
+  L[108] = cair ? L[26] : 0;
+  if (!cair){ L[109] = L[110] = L[111] = 0; }
+  L[112] = Math.max(0, r2(L[108] - L[110] - L[111]));
+  L[113] = r2(L[112] * 0.0467); L[114] = r2(L[113] * T);
+  L[115] = cair ? L[94] : 0; L[116] = cair ? L[95] : 0; L[117] = cair ? L[98] : 0; L[118] = cair ? L[96] : 0; L[119] = cair ? L[99] : 0;
+  const lc = r2(L[114] - sumN(L, 115, 119)); L[120] = cair ? Math.max(lc, 0) : 0; L[121] = cair ? Math.max(-lc, 0) : 0;
+  L[122] = L[113]; L[123] = r2(L[122] * T); L[124] = Math.min(L[121], L[123]); L[125] = cair ? L[105] : 0;
+  const ec = r2(L[123] - L[121] - L[125]); L[126] = cair ? Math.max(ec, 0) : 0; L[127] = cair ? Math.max(-ec, 0) : 0;
+  const usaCair = cair && L[114] > L[93];
+  L[128] = usaCair ? L[120] : L[100]; L[129] = usaCair ? L[121] : L[101];
+  L[130] = usaCair ? L[126] : L[106]; L[131] = usaCair ? L[127] : L[107];
+  L[132] = L[133] = L[134] = r2(L[130] / 3);
+  const isr = usaCair ? L[114] : L[93];
+  L[135] = L[91];
+  L[142] = r2(Math.max(0, L[135] - isr) * 0.40 * 0.10 + (L[136] + L[137]) * 0.40 * 0.05);
+  L[144] = Math.max(0, r2(L[142] - L[143]));
+  L[155] = L[34];
+  L[162] = r2(sumN(L, 145, 153) - L[154] + sumN(L, 155, 159) - L[160] + L[161]);
+  L[174] = sumN(L, 163, 173);
+  L[176] = Math.max(0, r2(L[83] - isr)); L[178] = L[84];
+  L[183] = r2(L[175] + L[176] - L[177] - L[178] + L[179] - L[180] + L[181] - L[182]);
+  L[187] = Math.max(L[183], 0); L[188] = Math.max(-L[183], 0);
+  L[189] = r2(L[184] + L[185] + L[186] + L[187] - L[188]);
+  L[190] = L[189]; L[191] = Math.min(60000, Math.max(100, r2(L[190] * 0.02)));
+  L._cair = cair; L._usaCair = usaCair;
+  return L;
+}
+function rjCalc(){
+  const d = rjLeer(), L = rjResolver(d);
+  RJ_LIN.forEach(l => { if (l.n != null && !l.in){ const el = $('#rj_' + l.n); if (el) el.value = (L[l.n] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } });
+  const aviso = (n, txt) => { const w = $('#rjw_' + n); if (w) w.innerHTML = txt ? `<span style="color:var(--warn)">${txt}</span>` : ''; };
+  aviso(64, (d.v[64] || 0) > 50000 ? 'Se acepta hasta B/.50,000.' : '');
+  aviso(85, L[85] > r2(L[83] * 0.5) ? 'El arrastre no puede pasar del 50 % de la renta gravable (83).' : '');
+  aviso(108, L[20] > 1500000 ? (d.cab.nocair ? 'Ingresos mayores a B/.1,500,000, pero se marcó la solicitud de no aplicación del CAIR.' : 'Ingresos mayores a B/.1,500,000: aplica el CAIR.') : 'Ingresos hasta B/.1,500,000: no aplica el CAIR.');
+  aviso(128, L._usaCair ? 'Se toma el CAIR: su impuesto (114) es mayor que el tradicional (93).' : L._cair ? 'Se toma el método tradicional: su impuesto (93) es mayor o igual que el CAIR (114).' : '');
+  const dif = r2(L[162] - L[174] - L[189]);
+  aviso(162, (L[162] || L[174] || L[189]) && Math.abs(dif) > 0.01 ? `El balance no cuadra: activos − (pasivos + patrimonio) = ${money(dif)}.` : '');
+  return L;
+}
+$('#rjBody').addEventListener('input', rjCalc);
+$('#rjCab').addEventListener('input', rjCalc);
+$('#rjCab').addEventListener('change', rjCalc);
+document.addEventListener('click', e => {
+  const l = e.target.dataset && e.target.dataset.ajl, c = e.target.dataset && e.target.dataset.ajc;
+  if (l != null) $('#ajl_' + l).classList.toggle('hidden');
+  if (c != null) $('#ajc_' + c).classList.toggle('hidden');
+});
+$('#rjVerAyuda').addEventListener('change', e => { $$('.rjayuda-row, #rjCab .rtayuda').forEach(x => x.classList.toggle('hidden', !e.target.checked)); });
+function rjLimpiar(){
+  RJ_CAB.forEach(c => { const el = $('#rjc_' + c.id); if (!el || c.fijo) return; if (c.check) el.checked = false; else if (c.opts) el.selectedIndex = 0; else el.value = ''; });
+  $$('#rjBody input:not([disabled])').forEach(el => { el.value = ''; }); AJD = { ven: [], cg: [], int: [], exe: [] };
+  rjCalc(); $('#rjMsgs').innerHTML = '';
+}
+$('#rjLimpiar').addEventListener('click', rjLimpiar);
+function rjCargar(d){
+  rjLimpiar();
+  Object.entries(d.cab || {}).forEach(([k, val]) => { const el = $('#rjc_' + k); if (!el) return; if (el.type === 'checkbox') el.checked = !!val; else if (!el.disabled) el.value = val; });
+  Object.entries(d.v || {}).forEach(([k, val]) => { const el = $('#rj_' + k); if (el && !el.disabled) el.value = val || ''; });
+  AJD = Object.assign({ ven: [], cg: [], int: [], exe: [] }, JSON.parse(JSON.stringify(d.anx || {})));
+  rjCalc();
+}
+
+/* ---- Casos ---- */
+const RJ_CASOS = [
+  { id: 'j1', auto: true, titulo: 'Ejemplo resuelto · Ferretería Ejemplo, S.A.',
+    texto: 'Ferretería Ejemplo, S.A. (RUC 155700700-2-2018, DV 25) declara el año 2026 por el sistema devengado, tarifa 25 %. Vendió B/.600,000 al contado y B/.250,000 al crédito; tuvo devoluciones de clientes por B/.10,000. Ganó B/.2,000 de intereses en una cuenta de ahorro del Banco Ejemplo (RUC 8-NT-1-1000, DV 10), que son exentos (art. 708, literal L). Costos: inventario inicial B/.120,000, compras locales B/.450,000, importaciones B/.80,000 e inventario final B/.130,000. Gastos: salarios B/.90,000; cuotas patronales y prestaciones B/.15,000; alquiler del local B/.36,000 a Inmobiliaria Ejemplo, S.A. (RUC 155700701-2-2018, DV 26); electricidad, agua y teléfono B/.9,000 a Servicios Públicos Ejemplo (RUC 155700702-2-2018, DV 27); honorarios de su contador Lic. Juan Contable (cédula 8-300-400, DV 30) B/.6,000; intereses de su préstamo con el Banco Ejemplo B/.8,000; depreciación B/.12,000; cargos bancarios B/.1,500; impuestos municipales y aviso de operación B/.4,500; otros gastos B/.3,000, de los que B/.1,000 son una multa (no deducible). Balance al 31-dic: caja y bancos 60,000; cuentas por cobrar 95,000; mobiliario 40,000; maquinaria y equipo 30,000; depreciación acumulada 25,000; cuentas por pagar 80,000; préstamo bancario 70,000; reserva de prestaciones 20,000; acciones comunes 50,000; superávit inicial 78,000; dividendos pagados en el año 70,000.',
+    pista: 'Ingresos: casilla 1 = 850,000 (anexo 90); 14 = 2,000; 18 = 10,000 → 20 = 842,000. Anexo 93: literal L, 2,000 → 21 = 2,000 → 26 = 840,000. Costos: 120,000 + 450,000 + 80,000 − 130,000 = 520,000 (36 y 41). Gastos: 42 = 90,000; 43 = 15,000; 46 = 36,000 y 69 = 9,000 y 60 = 6,000 (anexo 72); 55 = 8,000 (anexo 78); 57 = 12,000; 53 = 1,500; 59 = 4,500; 76 = 3,000 → 77 = 185,000; 80 = 1,000 (multa) → 82 = 184,000. Renta gravable (83 y 91): 840,000 − 520,000 − 184,000 = 136,000. Impuesto causado (93): 136,000 × 25 % = 34,000. Estimado (103 y 106): 34,000, en tres partidas de 11,333.33. No aplica CAIR: ingresos menores a B/.1,500,000. Complementario (142): (136,000 − 34,000) × 40 % × 10 % = 4,080. Balance: activos 330,000 = pasivos 170,000 + patrimonio 160,000. Aviso de operación (191): 2 % de 160,000 = 3,200.',
+    entrada: { cab: { ruc: '155700700-2-2018', dv: '25', nombre: 'Ferretería Ejemplo, S.A.' },
+      v: { 14: 2000, 18: 10000, 27: 120000, 28: 450000, 29: 80000, 34: 130000, 42: 90000, 43: 15000, 53: 1500, 57: 12000, 59: 4500, 76: 3000, 80: 1000, 145: 60000, 146: 95000, 158: 30000, 159: 40000, 160: 25000, 163: 80000, 168: 70000, 172: 20000, 184: 50000, 175: 78000, 180: 70000 },
+      anx: {
+        ven: [ { tipo: 'VENTAS AL CONTADO', monto: '600000' }, { tipo: 'VENTAS AL CRÉDITO', monto: '250000' } ],
+        exe: [ { con: 'LITERAL L - INGRESOS POR CUENTAS DE AHORRO BANCARIAS', tp: 'JURÍDICO', ruc: '8-NT-1-1000', dv: '10', nom: 'Banco Ejemplo', monto: '2000' } ],
+        cg: [ { tp: 'JURÍDICO', ruc: '155700701-2-2018', dv: '26', nom: 'Inmobiliaria Ejemplo, S.A.', pago: 'GASTOS', con: 'ALQUILERES', monto: '36000', per: 'ACTUAL' },
+              { tp: 'JURÍDICO', ruc: '155700702-2-2018', dv: '27', nom: 'Servicios Públicos Ejemplo', pago: 'GASTOS', con: 'ELECT., AGUA Y TEL', monto: '9000', per: 'ACTUAL' },
+              { tp: 'NATURAL', ruc: '8-300-400', dv: '30', nom: 'Juan Contable', pago: 'GASTOS', con: 'HONORARIO X SERV. PROF. Y COMIS.', monto: '6000', per: 'ACTUAL' } ],
+        int: [ { tp: 'JURÍDICO', ruc: '8-NT-1-1000', dv: '10', nom: 'Banco Ejemplo', int: '8000', gf: '0', dest: 'LOCAL' } ] } },
+    esperado: { rng: 136000, imp: 34000, final: 34000, est: 34000 },
+    chequeos: [] },
+  { id: 'j2', titulo: 'Caso para la clase · Distribuidora Práctica, S.A. (CAIR)',
+    texto: 'Distribuidora Práctica, S.A. (RUC 155700800-2-2019, DV 33) declara 2026 por el sistema devengado, tarifa 25 %. No presentó solicitud de no aplicación del CAIR. Vendió B/.2,000,000 en el año (B/.1,200,000 al contado y B/.800,000 al crédito). Costos: inventario inicial B/.300,000, compras locales B/.1,500,000, importaciones B/.200,000 e inventario final B/.300,000. Gastos: salarios B/.150,000; cuotas patronales y prestaciones B/.25,000; alquiler de la bodega B/.48,000 a Bodegas Ejemplo, S.A. (RUC 155700801-2-2019, DV 34); electricidad, agua y teléfono B/.12,000 a Servicios Públicos Ejemplo (RUC 155700702-2-2018, DV 27); depreciación B/.5,000. Calcule el impuesto por el método tradicional y por el CAIR, y diga cuál debe pagar la empresa.',
+    pista: 'Casilla 1 = 2,000,000 (anexo 90) → 20 y 26 = 2,000,000. Costos: 300,000 + 1,500,000 + 200,000 − 300,000 = 1,700,000. Gastos: 150,000 + 25,000 + 48,000 (46, anexo 72) + 12,000 (69, anexo 72) + 5,000 = 240,000. Renta neta gravable (91): 2,000,000 − 1,700,000 − 240,000 = 60,000 → impuesto tradicional (93): 15,000. CAIR: ingresos mayores a B/.1,500,000 → 113 = 2,000,000 × 4.67 % = 93,400 → 114 = 23,350. Se paga el mayor: 128 = 23,350. Estimado (130) por CAIR: 23,350, partidas de 7,783.33. Lección: con margen bajo, el CAIR sube el impuesto; la empresa puede pedir a la DGI la no aplicación si le causa una tasa efectiva mayor a la tarifa.',
+    entrada: null,
+    esperado: { rng: 60000, imp: 15000, final: 23350, est: 23350 },
+    chequeos: [
+      { v: L => L[20], esp: 2000000, msg: 'Ingresos (casillas 1 a 20): registre las ventas del año en el anexo 90.' },
+      { v: L => L[41], esp: 1700000, msg: 'Costos (27 a 41): inventario inicial más compras locales e importaciones, menos inventario final.' },
+      { v: L => L[82], esp: 240000, msg: 'Gastos (42 a 82): salarios, prestaciones, depreciación y, en el anexo 72, alquiler y electricidad.' },
+      { v: L => L._cair ? 1 : 0, esp: 1, msg: 'CAIR: revise que no haya marcado la solicitud de no aplicación del CAIR en el encabezado.' } ] }
+];
+function rjCasoActivo(){ return RJ_CASOS.find(c => c.id === RJ_CASO) || null; }
+function rjRenderBar(){
+  $('#rjCasoSel').innerHTML = '<option value="">Práctica libre (sin caso)</option>' + RJ_CASOS.map(c => `<option value="${c.id}" ${c.id === RJ_CASO ? 'selected' : ''}>${esc(c.titulo)}</option>`).join('');
+  const c = rjCasoActivo();
+  $('#rjToggle').classList.toggle('hidden', !c);
+  $('#rjToggle').textContent = RJ_OCULTO ? 'Ver enunciado' : 'Ocultar enunciado';
+  $('#rjCasoTxt').classList.toggle('hidden', RJ_OCULTO);
+  let botones = '';
+  if (c && c.auto) botones = '<button class="btn small" type="button" id="rjAuto">Llenar el ejemplo automáticamente</button><button class="btn small secondary" type="button" id="rjPista">Ver la explicación</button>';
+  else if (c && IS_TEACHER) botones = '<button class="btn small secondary" type="button" id="rjPista">Ver solución (solo facilitador)</button>';
+  $('#rjCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px;text-align:justify">${esc(c.texto)}</div><div class="row" style="margin-top:6px">${botones}<span class="hint">${c.auto ? 'Este ejemplo se llena solo para verlo casilla por casilla.' : 'Llene la declaración y pulse «Revisar caso».'}</span></div><div id="rjPistaTxt"></div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena la declaración.</span>';
+}
+$('#rjCasoSel').addEventListener('change', e => { RJ_CASO = e.target.value; RJ_OCULTO = false; rjLimpiar(); rjRenderBar(); });
+$('#rjToggle').addEventListener('click', () => { RJ_OCULTO = !RJ_OCULTO; rjRenderBar(); });
+$('#rjCasoTxt').addEventListener('click', e => {
+  const c = rjCasoActivo(); if (!c) return;
+  if (e.target.id === 'rjAuto'){ rjCargar(c.entrada); $('#rjRevisar').click(); }
+  if ((e.target.id === 'rjAuto' || e.target.id === 'rjPista') && (c.auto || IS_TEACHER)) $('#rjPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px;text-align:justify">💡 ${esc(c.pista)}</div>`;
+});
+$('#rjRevisar').addEventListener('click', () => {
+  const c = rjCasoActivo(); const L = rjCalc();
+  if (!c) return errMsg('#rjMsgs', 'Elija primero un caso arriba, en «¿Qué caso está resolviendo?».');
+  const e = c.esperado, m = [];
+  const ok1 = near(L[91], e.rng), ok2 = near(L[93], e.imp), ok3 = near(L[128], e.final), ok4 = near(L[130], e.est);
+  m.push(ok1 ? '✓ Casilla 91, renta neta gravable: correcta.' : '✗ Casilla 91, renta neta gravable: no coincide. Revise ingresos, costos y gastos.');
+  m.push(ok2 ? '✓ Casilla 93, impuesto causado (método tradicional): correcto.' : '✗ Casilla 93, impuesto causado: no coincide.');
+  m.push(ok3 ? '✓ Casilla 128, impuesto jurado a pagar: correcto.' : '✗ Casilla 128, impuesto jurado a pagar: no coincide.' + (c.id === 'j2' ? ' Revise si aplica el CAIR.' : ''));
+  m.push(ok4 ? '✓ Casilla 130, impuesto estimado: correcto.' : '✗ Casilla 130, impuesto estimado: no coincide.');
+  const ok = ok1 && ok2 && ok3 && ok4;
+  const fallas = ok ? [] : (c.chequeos || []).filter(q => !near(q.v(L), q.esp)).map(q => '• ' + q.msg);
+  if (fallas.length) m.push('<b>Dónde revisar:</b>', ...fallas);
+  $('#rjMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b>' : ''}</div>`;
+});
+function renderRentaJ(){ if (!RJ_LISTO){ rjRender(); RJ_LISTO = true; } rjRenderBar(); rjCalc(); }
+(function(){ const t = $('#tabs [data-tab="renta"]'); const b = document.createElement('button'); b.dataset.tab = 'rentaj'; b.textContent = 'Renta jurídica'; t.after(b); })();
+const _showRJ = show;
+show = function(tab){ _showRJ(tab); if (tab === 'rentaj') renderRentaJ(); };
+
 function rtCasosResueltos(lista){ return RT_CASOS.filter(c => lista.some(x => x.caso === c.id && x.res && rtCumple(c, x.res))).length; }
 
 /* ======== Tareas (estudiante) ======== */

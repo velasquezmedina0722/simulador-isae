@@ -436,6 +436,7 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <div class="tablewrap"><table class="rtform"><tbody id="rjBody"></tbody></table></div>
         <div class="row" style="margin-top:12px">
           <button class="btn" type="button" id="rjRevisar">Revisar caso</button>
+          <button class="btn secondary" type="button" id="rjGuardar">Guardar borrador</button>
           <button class="btn danger right" type="button" id="rjLimpiar">Limpiar</button>
         </div>
         <div class="msgs" id="rjMsgs"></div>
@@ -2213,7 +2214,29 @@ function rjRenderBar(){
   else if (c && IS_TEACHER) botones = '<button class="btn small secondary" type="button" id="rjPista">Ver solución (solo facilitador)</button>';
   $('#rjCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px;text-align:justify">${esc(c.texto)}</div><div class="row" style="margin-top:6px">${botones}<span class="hint">${c.auto ? 'Este ejemplo se llena solo para verlo casilla por casilla.' : 'Llene la declaración y pulse «Revisar caso».'}</span></div><div id="rjPistaTxt"></div>` : '<span class="hint">Elija un caso para ver aquí su enunciado mientras llena la declaración.</span>';
 }
-$('#rjCasoSel').addEventListener('change', e => { RJ_CASO = e.target.value; RJ_OCULTO = false; rjLimpiar(); rjRenderBar(); });
+function rjBorrador(){ return RENTAS.find(x => x.formulario === 'juridico' && (x.caso || '') === (RJ_CASO || '')) || null; }
+function rjAbrirBorrador(){
+  const b = rjBorrador(); if (!b || !b.entrada) return;
+  rjCargar(b.entrada);
+  $('#rjMsgs').innerHTML = '<div class="msg ok">Se cargó su borrador (guardado el ' + fdate(b.fecha) + '). Siga trabajando y vuelva a pulsar «Guardar borrador».</div>';
+}
+$('#rjCasoSel').addEventListener('change', e => { RJ_CASO = e.target.value; RJ_OCULTO = false; rjLimpiar(); rjRenderBar(); rjAbrirBorrador(); });
+$('#rjGuardar').addEventListener('click', async () => {
+  const c = rjCasoActivo(); const d = rjLeer(); const L = rjCalc();
+  if (!L[20] && !L[162]) return errMsg('#rjMsgs', 'La declaración está vacía. Llene al menos los ingresos (anexo 90) antes de guardar.');
+  const data = { clase: 'renta', formulario: 'juridico', caso: c ? c.id : '', titulo: c ? c.titulo : 'Práctica libre · persona jurídica', entrada: d, borrador: true, fecha: new Date().toISOString() };
+  const previo = rjBorrador();
+  try {
+    if (previo && previo.dbid){
+      await busy($('#rjGuardar'), () => api.update('documentos', { id: previo.dbid }, { data }));
+      Object.assign(previo, data);
+    } else {
+      const row = await busy($('#rjGuardar'), () => api.insert('documentos', { data }));
+      RENTAS.unshift({ ...data, dbid: row.id });
+    }
+    okMsg('#rjMsgs', 'Borrador guardado. Cuando vuelva, elija este mismo caso y se cargará solo.');
+  } catch(err){ errMsg('#rjMsgs', 'No se pudo guardar el borrador: ' + errText(err)); }
+});
 $('#rjToggle').addEventListener('click', () => { RJ_OCULTO = !RJ_OCULTO; rjRenderBar(); });
 $('#rjCasoTxt').addEventListener('click', e => {
   const c = rjCasoActivo(); if (!c) return;
@@ -2236,7 +2259,7 @@ $('#rjRevisar').addEventListener('click', () => {
   if (fallas.length) m.push('<b>Dónde revisar:</b>', ...fallas);
   $('#rjMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b>' : ''}</div>`;
 });
-function renderRentaJ(){ if (!RJ_LISTO){ rjRender(); RJ_LISTO = true; } rjRenderBar(); rjCalc(); }
+function renderRentaJ(){ if (!RJ_LISTO){ rjRender(); RJ_LISTO = true; rjRenderBar(); rjCalc(); rjAbrirBorrador(); return; } rjRenderBar(); rjCalc(); }
 (function(){ const t = $('#tabs [data-tab="renta"]'); const b = document.createElement('button'); b.dataset.tab = 'rentaj'; b.textContent = 'Renta jurídica'; t.after(b); })();
 const _showRJ = show;
 show = function(tab){ _showRJ(tab); if (tab === 'rentaj') renderRentaJ(); };

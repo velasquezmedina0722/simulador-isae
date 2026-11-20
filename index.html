@@ -2264,7 +2264,11 @@ function renderRentaJ(){ if (!RJ_LISTO){ rjRender(); RJ_LISTO = true; rjRenderBa
 const _showRJ = show;
 show = function(tab){ _showRJ(tab); if (tab === 'rentaj') renderRentaJ(); };
 
-function rjCasosResueltos(lista){ return RJ_CASOS.filter(c => lista.some(x => x.formulario === 'juridico' && x.caso === c.id && x.cumple === true)).length; }
+function rjCumpleDoc(c, x){
+  if (x.cumple === true) return true; if (!x.entrada) return false;
+  try { const L = rjResolver(x.entrada), e = c.esperado; return near(L[91], e.rng) && near(L[93], e.imp) && near(L[128], e.final) && near(L[130], e.est) && near(L[162], e.act) && near(L[174], e.pas) && near(L[189], e.pat); } catch(err){ return false; }
+}
+function rjCasosResueltos(lista){ return RJ_CASOS.filter(c => lista.some(x => x.formulario === 'juridico' && x.caso === c.id && rjCumpleDoc(c, x))).length; }
 function rtCasosResueltos(lista){ return RT_CASOS.filter(c => lista.some(x => x.caso === c.id && x.res && rtCumple(c, x.res))).length; }
 
 /* ======== Tareas (estudiante) ======== */

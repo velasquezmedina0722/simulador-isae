@@ -1512,7 +1512,7 @@ document.addEventListener('click', e => {
 });
 
 /* ======== Declaración de renta · persona natural asalariada (formato del Formulario 1, asalariado puro) ======== */
-(function(){ const t = $('#tabs [data-tab="evaluacion"]'); const b = document.createElement('button'); b.dataset.tab = 'renta'; b.textContent = 'Declaración de renta'; t.after(b); })();
+(function(){ const t = $('#tabs [data-tab="evaluacion"]'); const b = document.createElement('button'); b.dataset.tab = 'renta'; b.textContent = 'Renta natural'; t.after(b); })();
 let RENTAS = [];
 let RT_CASO = '', RT_OCULTO = false;
 
@@ -2221,21 +2221,20 @@ function rjAbrirBorrador(){
   $('#rjMsgs').innerHTML = '<div class="msg ok">Se cargó su borrador (guardado el ' + fdate(b.fecha) + '). Siga trabajando y vuelva a pulsar «Guardar borrador».</div>';
 }
 $('#rjCasoSel').addEventListener('change', e => { RJ_CASO = e.target.value; RJ_OCULTO = false; rjLimpiar(); rjRenderBar(); rjAbrirBorrador(); });
+async function rjGuardarDoc(resuelto, btn){
+  const c = rjCasoActivo(); const d = rjLeer(); const L = rjCalc(); const previo = rjBorrador();
+  const cumple = !!(resuelto || (previo && previo.cumple));
+  const data = { clase: 'renta', formulario: 'juridico', caso: c ? c.id : '', titulo: c ? c.titulo : 'Práctica libre · persona jurídica', entrada: d, borrador: !cumple, cumple,
+    res: { rng: L[91] || 0, imp: L[93] || 0, final: L[128] || 0, act: L[162] || 0, pas: L[174] || 0, pat: L[189] || 0 }, fecha: new Date().toISOString() };
+  const go = fn => btn ? busy(btn, fn) : fn();
+  if (previo && previo.dbid){ await go(() => api.update('documentos', { id: previo.dbid }, { data })); Object.assign(previo, data); }
+  else { const row = await go(() => api.insert('documentos', { data })); RENTAS.unshift({ ...data, dbid: row.id }); }
+}
 $('#rjGuardar').addEventListener('click', async () => {
-  const c = rjCasoActivo(); const d = rjLeer(); const L = rjCalc();
+  const L = rjCalc();
   if (!L[20] && !L[162]) return errMsg('#rjMsgs', 'La declaración está vacía. Llene al menos los ingresos (anexo 90) antes de guardar.');
-  const data = { clase: 'renta', formulario: 'juridico', caso: c ? c.id : '', titulo: c ? c.titulo : 'Práctica libre · persona jurídica', entrada: d, borrador: true, fecha: new Date().toISOString() };
-  const previo = rjBorrador();
-  try {
-    if (previo && previo.dbid){
-      await busy($('#rjGuardar'), () => api.update('documentos', { id: previo.dbid }, { data }));
-      Object.assign(previo, data);
-    } else {
-      const row = await busy($('#rjGuardar'), () => api.insert('documentos', { data }));
-      RENTAS.unshift({ ...data, dbid: row.id });
-    }
-    okMsg('#rjMsgs', 'Borrador guardado. Cuando vuelva, elija este mismo caso y se cargará solo.');
-  } catch(err){ errMsg('#rjMsgs', 'No se pudo guardar el borrador: ' + errText(err)); }
+  try { await rjGuardarDoc(false, $('#rjGuardar')); okMsg('#rjMsgs', 'Borrador guardado. Cuando vuelva, elija este mismo caso y se cargará solo.'); }
+  catch(err){ errMsg('#rjMsgs', 'No se pudo guardar el borrador: ' + errText(err)); }
 });
 $('#rjToggle').addEventListener('click', () => { RJ_OCULTO = !RJ_OCULTO; rjRenderBar(); });
 $('#rjCasoTxt').addEventListener('click', e => {
@@ -2257,13 +2256,15 @@ $('#rjRevisar').addEventListener('click', () => {
   const ok = ok1 && ok2 && ok3 && ok4 && ok5;
   const fallas = ok ? [] : (c.chequeos || []).filter(q => !near(q.v(L), q.esp)).map(q => '• ' + q.msg);
   if (fallas.length) m.push('<b>Dónde revisar:</b>', ...fallas);
-  $('#rjMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b>' : ''}</div>`;
+  $('#rjMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b> <span id="rjReg">Guardando…</span>' : ''}</div>`;
+  if (ok) rjGuardarDoc(true).then(() => { const r = $('#rjReg'); if (r) r.textContent = 'Quedó registrado para el facilitador.'; }).catch(err => { const r = $('#rjReg'); if (r) r.textContent = 'No se pudo registrar: ' + errText(err) + '. Pulse «Guardar borrador».'; });
 });
 function renderRentaJ(){ if (!RJ_LISTO){ rjRender(); RJ_LISTO = true; rjRenderBar(); rjCalc(); rjAbrirBorrador(); return; } rjRenderBar(); rjCalc(); }
 (function(){ const t = $('#tabs [data-tab="renta"]'); const b = document.createElement('button'); b.dataset.tab = 'rentaj'; b.textContent = 'Renta jurídica'; t.after(b); })();
 const _showRJ = show;
 show = function(tab){ _showRJ(tab); if (tab === 'rentaj') renderRentaJ(); };
 
+function rjCasosResueltos(lista){ return RJ_CASOS.filter(c => lista.some(x => x.formulario === 'juridico' && x.caso === c.id && x.cumple === true)).length; }
 function rtCasosResueltos(lista){ return RT_CASOS.filter(c => lista.some(x => x.caso === c.id && x.res && rtCumple(c, x.res))).length; }
 
 /* ======== Tareas (estudiante) ======== */
@@ -2492,13 +2493,14 @@ function filas(){
     const guardada = p && DC.notas.find(n => n.user_id === p.id && n.evaluacion === EVAL_ID);
     const tareas = DC.tareas.map(t => { const en = p ? DC.entregas.filter(x => x.user_id === p.id && x.tarea_id === t.id && x.estado !== 'borrador') : []; const c = en.find(x => x.calificacion != null); return c ? c.calificacion : (en.length ? 'entregada' : ''); });
     const renta = p ? rtCasosResueltos(DC.rentaPorUsuario[p.id] || []) : 0;
-    return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas, renta };
+    const rentaj = p ? rjCasosResueltos(DC.rentaPorUsuario[p.id] || []) : 0;
+    return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas, renta, rentaj };
   });
 }
 function dcProgreso(){
   const tareas = DC.tareas.slice().sort((a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega)));
   DC.tareas = tareas;
-  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Casos de práctica</th><th class="num">Evaluación simulador</th><th class="num">Renta (casos)</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
+  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Casos de práctica</th><th class="num">Evaluación simulador</th><th class="num">Renta natural</th><th class="num">Renta jurídica</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
   const rows = filas();
   $('#pgBody').innerHTML = rows.map(r => `<tr>
     <td>${esc(r.a.nombre || '')}<br><span class="hint">${esc(r.a.email)}</span></td>
@@ -2507,14 +2509,15 @@ function dcProgreso(){
     <td class="num"><b>${r.casos * 20}</b><br><span class="hint">${r.casos} de ${CASES.length} casos</span></td>
     <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">no la ha guardado</span>'}</td>
     <td class="num">${r.renta} de ${RT_CASOS.length}</td>
+    <td class="num">${r.rentaj} de ${RJ_CASOS.length}</td>
     ${r.tareas.map(v => `<td class="num">${v === '' ? '—' : esc(v)}</td>`).join('')}
   </tr>`).join('') || '<tr><td colspan="5" class="hint">No hay estudiantes autorizados.</td></tr>';
 }
 $('#btnCsv').addEventListener('click', () => {
   if (!DC) return;
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)', 'Renta (casos resueltos)'].concat(DC.tareas.map(t => t.titulo));
-  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc, r.renta + '/' + RT_CASOS.length].concat(r.tareas).map(q).join(';')));
+  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)', 'Renta natural (casos resueltos)', 'Renta jurídica (casos resueltos)'].concat(DC.tareas.map(t => t.titulo));
+  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc, r.renta + '/' + RT_CASOS.length, r.rentaj + '/' + RJ_CASOS.length].concat(r.tareas).map(q).join(';')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Notas seminario fiscal ISAE ' + todayISO() + '.csv'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);

@@ -2268,6 +2268,7 @@ function rjCumpleDoc(c, x){
   if (x.cumple === true) return true; if (!x.entrada) return false;
   try { const L = rjResolver(x.entrada), e = c.esperado; return near(L[91], e.rng) && near(L[93], e.imp) && near(L[128], e.final) && near(L[130], e.est) && near(L[162], e.act) && near(L[174], e.pas) && near(L[189], e.pat); } catch(err){ return false; }
 }
+function rentaNota(casos, cumple){ const cl = casos.filter(c => !c.auto); const ok = cl.filter(cumple).length; return { nota: cl.length ? Math.round(ok / cl.length * 100) : 0, ok, total: cl.length, ej: casos.filter(c => c.auto).filter(cumple).length }; }
 function rjCasosResueltos(lista){ return RJ_CASOS.filter(c => lista.some(x => x.formulario === 'juridico' && x.caso === c.id && rjCumpleDoc(c, x))).length; }
 function rtCasosResueltos(lista){ return RT_CASOS.filter(c => lista.some(x => x.caso === c.id && x.res && rtCumple(c, x.res))).length; }
 
@@ -2496,8 +2497,9 @@ function filas(){
     const ev = evalResult(docs); const notaCalc = ev.reduce((s, x) => s + (x.ok ? x.pts : 0), 0);
     const guardada = p && DC.notas.find(n => n.user_id === p.id && n.evaluacion === EVAL_ID);
     const tareas = DC.tareas.map(t => { const en = p ? DC.entregas.filter(x => x.user_id === p.id && x.tarea_id === t.id && x.estado !== 'borrador') : []; const c = en.find(x => x.calificacion != null); return c ? c.calificacion : (en.length ? 'entregada' : ''); });
-    const renta = p ? rtCasosResueltos(DC.rentaPorUsuario[p.id] || []) : 0;
-    const rentaj = p ? rjCasosResueltos(DC.rentaPorUsuario[p.id] || []) : 0;
+    const lr = p ? (DC.rentaPorUsuario[p.id] || []) : [];
+    const renta = rentaNota(RT_CASOS, c => lr.some(x => x.formulario === 'asalariado' && x.caso === c.id && x.res && rtCumple(c, x.res)));
+    const rentaj = rentaNota(RJ_CASOS, c => lr.some(x => x.formulario === 'juridico' && x.caso === c.id && rjCumpleDoc(c, x)));
     return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas, renta, rentaj };
   });
 }
@@ -2512,16 +2514,16 @@ function dcProgreso(){
     <td class="num">${r.docs}</td>
     <td class="num"><b>${r.casos * 20}</b><br><span class="hint">${r.casos} de ${CASES.length} casos</span></td>
     <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">no la ha guardado</span>'}</td>
-    <td class="num">${r.renta} de ${RT_CASOS.length}</td>
-    <td class="num">${r.rentaj} de ${RJ_CASOS.length}</td>
+    <td class="num"><b>${r.renta.nota}</b><br><span class="hint">${r.renta.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.renta.ej ? ' · ejemplo visto' : ''}</span></td>
+    <td class="num"><b>${r.rentaj.nota}</b><br><span class="hint">${r.rentaj.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.rentaj.ej ? ' · ejemplo visto' : ''}</span></td>
     ${r.tareas.map(v => `<td class="num">${v === '' ? '—' : esc(v)}</td>`).join('')}
   </tr>`).join('') || '<tr><td colspan="5" class="hint">No hay estudiantes autorizados.</td></tr>';
 }
 $('#btnCsv').addEventListener('click', () => {
   if (!DC) return;
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)', 'Renta natural (casos resueltos)', 'Renta jurídica (casos resueltos)'].concat(DC.tareas.map(t => t.titulo));
-  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc, r.renta + '/' + RT_CASOS.length, r.rentaj + '/' + RJ_CASOS.length].concat(r.tareas).map(q).join(';')));
+  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)', 'Renta natural (100)', 'Renta jurídica (100)'].concat(DC.tareas.map(t => t.titulo));
+  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc, r.renta.nota, r.rentaj.nota].concat(r.tareas).map(q).join(';')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Notas seminario fiscal ISAE ' + todayISO() + '.csv'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);

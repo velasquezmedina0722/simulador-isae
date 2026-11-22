@@ -411,6 +411,62 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
         <div class="row" style="margin-top:12px"><button class="btn" type="button" id="anxGuardar">Guardar anexo</button><button class="btn secondary" type="button" id="anxCancelar">Cancelar</button></div>
       </div></div>
     </div>
+    <!-- DECLARACIÓN JURADA DEL ITBMS · FORMULARIO 430 -->
+    <div data-view="itbms" class="hidden">
+      <style>
+        .ivform td{vertical-align:middle}
+        .ivform td.rtlab{min-width:250px}
+        .ivform input{text-align:right;min-width:105px}
+        .ivcel{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+        .ivn{display:inline-block;min-width:34px;padding:2px 6px;border-radius:10px;background:#f6d6d6;color:#7a1f1f;font-weight:700;font-size:11.5px;text-align:center}
+        .ivhead th{font-size:12px;color:var(--brand);text-align:center;background:transparent;border:0}
+      </style>
+      <div class="card casobar">
+        <div class="row">
+          <label for="ivCasoSel" style="margin:0;font-size:14px;color:var(--brand)">¿Qué caso está resolviendo?</label>
+          <select id="ivCasoSel" style="max-width:440px;flex:1"></select>
+          <button class="btn small secondary right" type="button" id="ivToggle">Ocultar enunciado</button>
+        </div>
+        <div id="ivCasoTxt" style="margin-top:8px;font-size:14px"></div>
+      </div>
+      <div class="card">
+        <div class="row" style="margin-bottom:6px">
+          <div>
+            <h2 style="margin:0">Declaración jurada del ITBMS · Formulario 430</h2>
+            <div class="hint">Formulario de práctica · Declaración mensual · Sin valor fiscal</div>
+          </div>
+          <label class="right" style="display:flex;gap:6px;align-items:center;margin:0;font-weight:600;color:var(--brand)"><input type="checkbox" id="ivVerAyuda" style="width:auto"> Ver todas las explicaciones</label>
+        </div>
+        <p class="hint" style="margin-top:0">Las casillas con fondo gris se calculan solas. La casilla 52 se llena con el anexo 95 (créditos de retención). Pulse <b>i</b> para ver qué va en cada línea.</p>
+        <div class="grid" id="ivCab"></div>
+      </div>
+      <div class="card">
+        <div class="tablewrap"><table class="rtform ivform"><tbody id="ivBody"></tbody></table></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn" type="button" id="ivRevisar">Revisar caso</button>
+          <button class="btn secondary" type="button" id="ivGuardar">Guardar borrador</button>
+          <button class="btn danger right" type="button" id="ivLimpiar">Limpiar</button>
+        </div>
+        <div class="msgs" id="ivMsgs"></div>
+      </div>
+      <div class="card">
+        <h2 style="margin:0 0 4px">Informe de compras · Formulario 43</h2>
+        <p class="hint" style="margin-top:0;text-align:justify">Lo presentan cada mes, a más tardar el último día del mes siguiente, quienes en el año anterior tuvieron ingresos brutos de B/.1,000,000 o más, o activos de B/.3,000,000 o más. Detalla, factura por factura, las compras e importaciones de bienes y servicios. La DGI lo cruza con las ventas que reportan los proveedores y con el crédito fiscal del Formulario 430.</p>
+        <div class="row"><button class="btn secondary" type="button" data-ivanx="i43">Abrir informe de compras (43)</button><div id="ivI43Res" class="hint"></div></div>
+      </div>
+      <div class="overlay hidden" id="ivOverlay"><div class="ficha" style="max-width:1200px">
+        <div id="ivTit"></div>
+        <div id="ivCaso" style="margin-top:10px"></div>
+        <p class="hint" id="ivIntro" style="margin:10px 0 4px;text-align:justify"></p>
+        <div class="tablewrap"><table class="items"><thead id="ivHead"></thead><tbody id="ivABody"></tbody></table></div>
+        <div id="ivAyudas"></div>
+        <div class="row" style="margin-top:8px;align-items:flex-start">
+          <button class="btn small secondary" type="button" id="ivAdd">+ Agregar fila</button>
+          <div class="totals right" id="ivTot" style="min-width:420px"></div>
+        </div>
+        <div class="row" style="margin-top:12px"><button class="btn" type="button" id="ivAGuardar">Guardar</button><button class="btn secondary" type="button" id="ivACancelar">Cancelar</button></div>
+      </div></div>
+    </div>
     <!-- DECLARACIÓN DE RENTA · PERSONA JURÍDICA -->
     <div data-view="rentaj" class="hidden">
       <div class="card casobar">
@@ -2272,6 +2328,346 @@ function rentaNota(casos, cumple){ const cl = casos.filter(c => !c.auto); const 
 function rjCasosResueltos(lista){ return RJ_CASOS.filter(c => lista.some(x => x.formulario === 'juridico' && x.caso === c.id && rjCumpleDoc(c, x))).length; }
 function rtCasosResueltos(lista){ return RT_CASOS.filter(c => lista.some(x => x.caso === c.id && x.res && rtCumple(c, x.res))).length; }
 
+/* ======== Declaración jurada del ITBMS · Formulario 430 (con anexo 95 e informe de compras 43) ======== */
+(function(){ const t = $('#tabs [data-tab="rentaj"]'); const b = document.createElement('button'); b.dataset.tab = 'itbms'; b.textContent = 'ITBMS'; t.after(b); })();
+
+const IV_CAB = [
+  { id: 'ruc', label: 'RUC o cédula', ph: '155700000-2-2026', ayuda: 'RUC del contribuyente que declara el ITBMS.' },
+  { id: 'dv', label: 'D.V.', ph: '00', ayuda: 'Dígito verificador del RUC.' },
+  { id: 'nombre', label: 'Nombre o razón social', ph: 'Empresa Ejemplo, S.A.', ayuda: 'Nombre del contribuyente (no el de sus clientes ni proveedores).' },
+  { id: 'periodo', label: 'Período (AAAAMM)', ph: '202610', ayuda: 'Mes que se declara, en formato año y mes. Ejemplo: octubre de 2026 = 202610. El 430 es mensual y se presenta a más tardar el día 15 del mes siguiente; los profesionales independientes lo presentan cada trimestre.' },
+  { id: 'present', label: 'Tipo de presentación', opts: ['Original', 'Rectificativa'], ayuda: 'Original: la primera vez que se presenta el período. Rectificativa: corrige una ya presentada; se permite una vez por período dentro de 12 meses y tiene costo (B/.100 personas naturales, B/.500 jurídicas) si es después de tres meses.' },
+  { id: 'tipo', label: 'Tipo de declaración', opts: ['Normal', 'Sin operaciones'], ayuda: 'Normal: hubo ventas o compras en el mes. Sin operaciones: el contribuyente inscrito no tuvo movimiento, pero igual debe presentar la declaración.' },
+  { id: 'p9a', label: 'Parágrafo 9-A', check: true, ayuda: 'Márquelo solo si cumple el parágrafo 9-A del art. 1057-V del Código Fiscal (régimen especial de ciertos contribuyentes). En los casos del Aula queda sin marcar.' }
+];
+
+/* Cada fila: t = concepto, tar = tarifa, c = celdas [{ n, in } | { n, anx } | { n } calculada | null]. a = explicación. */
+const IV_LIN = [
+  { s: 'Operaciones y prestaciones de servicios del período y débito fiscal', h: ['Monto', '', '', 'Impuesto causado'] },
+  { t: 'Operaciones gravadas del período (ventas y prestación de servicios)', tar: '7%', c: [{ n: '11', in: 1 }, null, null, { n: '111' }], a: 'Ventas de bienes y servicios gravados al 7 % del mes, sin incluir el impuesto. La casilla 111 calcula el 7 %.' },
+  { t: 'Operaciones gravadas del período (transporte aéreo de pasajeros local e internacional)', tar: '7%', c: [{ n: '12', in: 1 }, null, null, { n: '121' }], a: 'Solo para líneas aéreas: pasajes de transporte aéreo de pasajeros.' },
+  { t: 'Operaciones gravadas del período (bebidas alcohólicas)', tar: '10%', c: [{ n: '13', in: 1 }, null, null, { n: '131' }], a: 'Ventas de bebidas alcohólicas, gravadas al 10 %.' },
+  { t: 'Servicios gravados del período (hospedaje o alojamiento público)', tar: '10%', c: [{ n: '14', in: 1 }, null, null, { n: '141' }], a: 'Servicios de hospedaje, gravados al 10 %.' },
+  { t: 'Operaciones gravadas del período (cigarrillos)', tar: '15%', c: [{ n: '15', in: 1 }, null, null, { n: '151' }], a: 'Ventas de cigarrillos y productos de tabaco, gravadas al 15 %.' },
+  { t: 'Operaciones de exportación y reexportación (parágrafo 8, literal a, num. 2)', tar: '', c: [{ n: '16', in: 1 }, null, null, null], a: 'Exportaciones y reexportaciones de bienes. No causan ITBMS, pero el crédito de sus compras se puede recuperar con Certificado con Poder Cancelatorio (CPC).' },
+  { t: 'Otras operaciones exentas (parágrafo 8, art. 1057-V)', tar: '', c: [{ n: '17', in: 1 }, null, null, null], a: 'Ventas exentas: alimentos, medicinas y productos farmacéuticos, útiles escolares, combustibles, servicios de salud, educación, alquiler de vivienda por más de 6 meses, entre otras.' },
+  { t: 'Operaciones no gravadas (parágrafo 7, art. 1057-V)', tar: '', c: [{ n: '18', in: 1 }, null, null, null], a: 'Operaciones que no causan el impuesto: transferencias de títulos y valores, intereses de servicios financieros, servicios de exportación (carga y descarga en puertos, logística), entre otras.' },
+  { t: 'Total de operaciones del período y subtotal del débito fiscal', tar: '', c: [{ n: '19' }, null, null, { n: '191' }], a: 'Se calcula solo: 19 suma las casillas 11 a 18; 191 suma el impuesto causado (111 a 151).' },
+  { t: 'Devoluciones y descuentos en compras gravadas (hasta 180 días de facturación)', tar: '7%', c: [{ n: '20', in: 1 }, null, null, { n: '201' }], a: 'Si un proveedor le dio una nota de crédito por devolución o descuento en una compra gravada, el ITBMS de esa nota se devuelve al fisco: aumenta el débito.' },
+  { t: 'Total débito fiscal', tar: '', c: [null, null, null, { n: '211' }], a: 'Se calcula solo: 191 + 201. Es todo el ITBMS que el contribuyente cobró en el mes.' },
+
+  { s: 'Compras o adquisiciones, prestación de servicios, importaciones e ITBMS cargado', h: ['Compras locales (monto)', 'Importaciones (monto)', 'Total monto', 'ITBMS'] },
+  { t: 'Compras imputables directamente a operaciones gravadas', tar: '7%', c: [{ n: '22', in: 1 }, { n: '221', in: 1 }, { n: '222' }, { n: '223' }], a: 'Compras que se usan solo para vender bienes o servicios gravados (por ejemplo, la mercancía gravada que revende). Todo su ITBMS es crédito fiscal.' },
+  { t: '', tar: '10%', c: [{ n: '23', in: 1 }, { n: '231', in: 1 }, { n: '232' }, { n: '233' }], a: 'Igual que la anterior, para compras gravadas al 10 %.' },
+  { t: '', tar: '15%', c: [{ n: '24', in: 1 }, { n: '241', in: 1 }, { n: '242' }, { n: '243' }], a: 'Igual que la anterior, para compras gravadas al 15 %.' },
+  { t: 'Total', tar: '', c: [null, null, null, { n: '253' }], a: 'ITBMS de las compras directas a operaciones gravadas (223 + 233 + 243).' },
+  { t: 'Compras imputables a operaciones mixtas', tar: '7%', c: [{ n: '26', in: 1 }, { n: '261', in: 1 }, { n: '262' }, { n: '263' }], a: 'Compras que sirven a la vez para ventas gravadas y exentas y no se pueden separar (alquiler del local, luz, teléfono, papelería). Su ITBMS se reparte en proporción a las ventas (casillas 41, 43 y 47).' },
+  { t: '', tar: '10%', c: [{ n: '27', in: 1 }, { n: '271', in: 1 }, { n: '272' }, { n: '273' }], a: 'Igual que la anterior, al 10 %.' },
+  { t: '', tar: '15%', c: [{ n: '28', in: 1 }, { n: '281', in: 1 }, { n: '282' }, { n: '283' }], a: 'Igual que la anterior, al 15 %.' },
+  { t: 'Total', tar: '', c: [null, null, null, { n: '293' }], a: 'ITBMS de las compras para operaciones mixtas (263 + 273 + 283).' },
+  { t: 'Compras destinadas directamente a exportaciones y reexportaciones', tar: '7%', c: [{ n: '30', in: 1 }, { n: '301', in: 1 }, { n: '302' }, { n: '303' }], a: 'Compras gravadas que se usan solo para exportar. Su ITBMS se puede recuperar con CPC.' },
+  { t: '', tar: '10%', c: [{ n: '31', in: 1 }, { n: '311', in: 1 }, { n: '312' }, { n: '313' }], a: 'Igual que la anterior, al 10 %.' },
+  { t: '', tar: '15%', c: [{ n: '32', in: 1 }, { n: '321', in: 1 }, { n: '322' }, { n: '323' }], a: 'Igual que la anterior, al 15 %.' },
+  { t: 'Total', tar: '', c: [null, null, null, { n: '333' }], a: 'ITBMS de las compras para exportación (303 + 313 + 323).' },
+  { t: 'Compras destinadas directamente a operaciones exentas', tar: '7%', c: [{ n: '34', in: 1 }, { n: '341', in: 1 }, { n: '342' }, { n: '343' }], a: 'Compras gravadas que se usan solo para ventas exentas. Su ITBMS no es crédito fiscal: pasa a la casilla 41 y se puede deducir como gasto en la renta.' },
+  { t: '', tar: '10%', c: [{ n: '35', in: 1 }, { n: '351', in: 1 }, { n: '352' }, { n: '353' }], a: 'Igual que la anterior, al 10 %.' },
+  { t: '', tar: '15%', c: [{ n: '36', in: 1 }, { n: '361', in: 1 }, { n: '362' }, { n: '363' }], a: 'Igual que la anterior, al 15 %.' },
+  { t: 'Total', tar: '', c: [null, null, null, { n: '373' }], a: 'ITBMS de las compras para operaciones exentas (343 + 353 + 363).' },
+  { t: 'Totalice el monto y el ITBMS cargado', tar: '', c: [{ n: '38' }, { n: '381' }, { n: '382' }, { n: '383' }], a: 'Se calcula solo: total de compras locales (38), importaciones (381), monto total (382) e ITBMS cargado (383).' },
+  { t: 'Compras e importaciones exentas', tar: '', c: [{ n: '39', in: 1 }, { n: '391', in: 1 }, { n: '392' }, null], a: 'Compras sin ITBMS (alimentos, medicinas, combustibles, útiles escolares). No generan crédito fiscal, pero se informan.' },
+  { t: 'Devoluciones y descuentos en ventas gravadas (hasta 180 días de facturación)', tar: '7%', c: [null, null, { n: '402', in: 1 }, { n: '403' }], a: 'Notas de crédito que el contribuyente emitió a sus clientes por devoluciones o descuentos. El ITBMS de esas notas (403) se recupera como crédito (casilla 44).' },
+
+  { s: 'Determinación del crédito fiscal', h: ['', '', '', 'Monto'] },
+  { t: 'Crédito fiscal no deducible', tar: '', c: [null, null, null, { n: '41' }], a: 'Se calcula solo: 373 + 293 × (17 + 18) ÷ 19. Es el ITBMS de compras que no se puede usar como crédito; se puede deducir como gasto en la renta.' },
+  { t: 'Crédito fiscal directo operaciones gravadas', tar: '', c: [null, null, null, { n: '42' }], a: 'Se calcula solo: igual a la casilla 253.' },
+  { t: 'Crédito fiscal proporcional operaciones gravadas', tar: '', c: [null, null, null, { n: '43' }], a: 'Se calcula solo: 293 × (11 + 12 + 13 + 14 + 15) ÷ 19. Es la parte del ITBMS de las compras mixtas que corresponde a las ventas gravadas.' },
+  { t: 'Crédito fiscal devoluciones y descuentos en ventas gravadas', tar: '', c: [null, null, null, { n: '44' }], a: 'Se calcula solo: igual a la casilla 403.' },
+  { t: 'Crédito fiscal deducible operaciones gravadas del período', tar: '', c: [null, null, null, { n: '45' }], a: 'Se calcula solo: 42 + 43 + 44.' },
+  { t: 'Crédito fiscal directo operaciones de exportación', tar: '', c: [null, null, null, { n: '46' }], a: 'Se calcula solo: igual a la casilla 333.' },
+  { t: 'Crédito fiscal proporcional operaciones de exportación', tar: '', c: [null, null, null, { n: '47' }], a: 'Se calcula solo: 293 × 16 ÷ 19.' },
+  { t: 'Crédito fiscal deducible por operaciones al exterior susceptible de CPC', tar: '', c: [null, null, null, { n: '48' }], a: 'Se calcula solo: 46 + 47. Se puede pedir como CPC o usar como crédito en la casilla 53.' },
+
+  { s: 'Liquidación y saldo del impuesto', h: ['', '', '', 'Monto'] },
+  { t: 'Débito fiscal', tar: '', c: [null, null, null, { n: '49' }], a: 'Se calcula solo: igual a la casilla 211.' },
+  { t: 'Crédito fiscal deducible operaciones gravadas del período', tar: '', c: [null, null, null, { n: '50' }], a: 'Se calcula solo: igual a la casilla 45.' },
+  { t: 'Saldo a favor del contribuyente declaración anterior', tar: '', c: [null, null, null, { n: '51', in: 1 }], a: 'Saldo a favor que quedó en la casilla 54 de la declaración del mes anterior. En e-Tax lo trae el sistema.' },
+  { t: 'Crédito de retención del ITBMS (anexo 95)', tar: '', c: [null, null, null, { n: '52', anx: 'r95' }], a: 'Se llena con el anexo 95: suma del ITBMS que le retuvieron sus clientes agentes de retención (Estado, grandes compradores, administradoras de tarjetas) en el mes. Se usa en el mes en que se facturó.' },
+  { t: 'Crédito fiscal deducible por operaciones al exterior', tar: '', c: [null, null, null, { n: '53', in: 1 }], a: 'Solo exportadores que decidan usar como crédito el monto de la casilla 48 (no puede pasar de ese monto).' },
+  { t: 'Saldo a favor del contribuyente que se trasladará al siguiente período fiscal', tar: '', c: [null, null, null, { n: '54' }], a: 'Se calcula solo: 50 + 51 + 52 + 53 − 49, si es positivo. Se usa el mes siguiente (casilla 51); no se devuelve.' },
+  { t: 'Impuesto a pagar', tar: '', c: [null, null, null, { n: '55' }], a: 'Se calcula solo: 49 − (50 + 51 + 52 + 53), si es positivo. Se paga con la boleta, código 202, a más tardar el día 15 del mes siguiente.' },
+  { t: 'Recargo', tar: '', c: [null, null, null, { n: '56', in: 1 }], a: '10 % de la casilla 55 si se presenta con impuesto a pagar después del día 15.' },
+  { t: 'Multa', tar: '', c: [null, null, null, { n: '57', in: 1 }], a: 'Multa por presentar tarde la declaración (por ejemplo, B/.10 si tiene saldo a favor y se presenta pasados 60 días).' },
+  { t: 'Interés', tar: '', c: [null, null, null, { n: '58', in: 1 }], a: 'Intereses sobre el impuesto pagado después del día 15.' },
+  { t: 'Total a pagar', tar: '', c: [null, null, null, { n: '59' }], a: 'Se calcula solo: 55 + 56 + 57 + 58.' },
+
+  { s: 'Información adicional para CPC', h: ['', '', '', 'Monto'] },
+  { t: 'Crédito fiscal susceptible CPC', tar: '', c: [null, null, null, { n: '60' }], a: 'Se calcula solo: el monto de la casilla 48 cuando no se usó como crédito en la 53.' },
+  { t: 'Crédito fiscal susceptible CPC acumulado', tar: '', c: [null, null, null, { n: '61', in: 1 }], a: 'Lo acumulado en la casilla 63 de la declaración anterior.' },
+  { t: 'Menos CPC otorgado por resolución', tar: '', c: [null, null, null, { n: '62', in: 1 }], a: 'Monto de CPC que la DGI ya otorgó por resolución.' },
+  { t: 'Total crédito fiscal susceptible CPC', tar: '', c: [null, null, null, { n: '63' }], a: 'Se calcula solo: 60 + 61 − 62.' }
+];
+
+/* ---- Anexo 95 e informe de compras 43 ---- */
+const IV_OBJ = { 'PAGO POR SERVICIO PROFESIONAL AL ESTADO 100%': 1, 'PAGO POR VENTA DE BIENES/SERVICIOS AL ESTADO 50%': 0.5, 'PAGO O ACREDITACION NO DOMICILIADO O EMPRESA EN EL EXTERIOR 100%': 1, 'PAGO O ACREDITACION POR COMPRA DE BIENES/SERVICIOS 50%': 0.5, 'PAGO A COMERCIO AFILIADO A SISTEMA DE TC/TD 50%': 0.5, 'PAGO POR VENTA DE BIENES/SERVICIOS AL ESTADO -OTRO %': null, 'PAGO O ACREDITACION POR COMPRA DE BIENES/SERVICIOS - OTRO%': null, 'PAGO A COMERCIO AFILIADO A SISTEMA DE TC/TD - OTRO%': null };
+function ivRet(f){ const p = IV_OBJ[f.obj]; return p == null ? r2(+f.ret || 0) : r2((+f.itbms || 0) * p); }
+const IV_ANX = {
+  r95: { cod: 'Anexo 95v1', titulo: 'Detalle de crédito de retención del ITBMS', alimenta: 'Alimenta la casilla 52',
+    intro: 'Una fila por cada factura a la que un cliente agente de retención le retuvo ITBMS. Los datos salen del certificado de retención que entrega el agente: su RUC, el número de factura, el monto gravado, el ITBMS causado y lo retenido. El ITBMS retenido se calcula solo según el objeto de la retención; en las opciones «OTRO %» se escribe a mano.',
+    cols: [ { k: 'tp', t: 'Tipo persona', opts: ['', 'NATURAL', 'JURÍDICO'], a: 'Tipo de persona del agente que retuvo (su cliente). Las entidades del Estado y las empresas son JURÍDICO.' },
+            { k: 'ruc', t: 'RUC', a: 'RUC del agente de retención (el cliente que le pagó y le retuvo), tal como aparece en el certificado.' },
+            { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador del agente de retención.' },
+            { k: 'nom', t: 'Nombre o razón social', a: 'Nombre del agente de retención: la entidad del Estado, el gran comprador o la administradora de tarjetas.' },
+            { k: 'fac', t: 'Nº factura/documento', a: 'Número de la factura que usted emitió y a la que le retuvieron. En las tarjetas, el número del documento o liquidación de la procesadora.' },
+            { k: 'base', t: 'Monto gravado ITBMS', num: true, a: 'Monto de la venta sin el impuesto: la base sobre la que se calculó el ITBMS.' },
+            { k: 'itbms', t: 'ITBMS causado', num: true, a: 'ITBMS que usted facturó en esa venta (normalmente el 7 % del monto gravado).' },
+            { k: 'obj', t: 'Objeto de la retención', opts: [''].concat(Object.keys(IV_OBJ)), a: 'Por qué le retuvieron. Venta de bienes o servicios al Estado: 50 %. Servicios profesionales al Estado: 100 %. Venta a un gran comprador (agente designado): 50 %. Ventas cobradas con tarjeta de crédito o débito: 50 %. Pagos a no domiciliados: 100 %. «OTRO %» se usa cuando la DGI autorizó un porcentaje menor.' },
+            { k: 'ret', t: 'ITBMS retenido', num: true, calc: ivRet, a: 'Se calcula solo: ITBMS causado × porcentaje del objeto. Solo en «OTRO %» se escribe el monto retenido según el certificado.' } ],
+    totales(rows){ const b = r2(rows.reduce((s, x) => s + (+x.base || 0), 0)), i = r2(rows.reduce((s, x) => s + (+x.itbms || 0), 0)), r = r2(rows.reduce((s, x) => s + ivRet(x), 0));
+      return { lineas: [['Monto gravado ITBMS', b], ['ITBMS causado', i], ['ITBMS retenido', r], ['Notas de crédito', 0], ['Crédito de retención del ITBMS (casilla 52)', r]], c: { 52: r } }; } },
+  i43: { cod: 'Formulario 43', titulo: 'Informe de compras e importaciones de bienes y servicios', alimenta: 'Se presenta aparte del 430 (último día del mes siguiente)',
+    intro: 'Una fila por cada factura de compra del mes. Fecha en formato AAAAMMDD (ejemplo: 20261015). El ITBMS pagado no puede ser mayor que el 15 % del monto. El total de compras e ITBMS debe coincidir con lo declarado en el Formulario 430.',
+    cols: [ { k: 'tp', t: 'Tipo de persona', opts: ['', 'N - NATURAL', 'J - JURÍDICA', 'E - EXTRANJERO'], a: 'Tipo de persona del proveedor. Para un extranjero se escribe «Pasaporte» en el RUC y el DV queda en blanco.' },
+            { k: 'ruc', t: 'RUC', a: 'RUC del proveedor, con guiones.' },
+            { k: 'dv', t: 'DV', w: 50, a: 'Dígito verificador del proveedor. El sistema valida que corresponda.' },
+            { k: 'nom', t: 'Nombre o razón social', a: 'Nombre del proveedor.' },
+            { k: 'fac', t: 'Factura', a: 'Número de la factura de compra (solo números).' },
+            { k: 'fecha', t: 'Fecha (AAAAMMDD)', a: 'Fecha de la factura en formato año, mes y día, sin separadores. Ejemplo: 20261015.' },
+            { k: 'con', t: 'Concepto', opts: ['', '1 - COMPRAS O ADQUISICIONES DE BIENES MUEBLES', '2 - SERVICIOS BÁSICOS', '3 - HONORARIOS Y COMISIONES POR SERVICIOS PERSONALES', '4 - ALQUILERES POR ARRENDAMIENTOS COMERCIALES', '5 - CARGOS BANCARIOS, INTERESES Y OTROS GASTOS FINANCIEROS', '6 - COMPRAS O SERVICIOS DEL EXTERIOR', '7 - COMPRAS O SERVICIOS CONSOLIDADOS'], a: 'Tipo de compra: 1 bienes (mercancía, insumos), 2 servicios básicos (luz, agua, teléfono), 3 honorarios y comisiones, 4 alquileres, 5 cargos bancarios e intereses, 6 compras o servicios del exterior, 7 compras consolidadas.' },
+            { k: 'tc', t: 'Compras de bienes y servicios', opts: ['1 - LOCALES', '2 - IMPORTACIONES'], a: '1 si la compra es local; 2 si es una importación.' },
+            { k: 'monto', t: 'Monto en balboas', num: true, a: 'Monto de la compra sin el ITBMS.' },
+            { k: 'itbms', t: 'ITBMS pagado', num: true, a: 'ITBMS pagado en esa factura. En compras exentas va 0.' } ],
+    totales(rows){ const m = r2(rows.reduce((s, x) => s + (+x.monto || 0), 0)), i = r2(rows.reduce((s, x) => s + (+x.itbms || 0), 0)); return { lineas: [['Total de compras', m], ['Total ITBMS pagado', i], ['Facturas registradas', rows.length]], c: {}, m, i }; } }
+};
+let IVD = { r95: [], i43: [] }, IV_AB = null, IV_TMP = [];
+function ivFila(k){ const f = {}; IV_ANX[k].cols.forEach(c => f[c.k] = c.opts ? c.opts[0] : ''); return f; }
+function ivAbrir(k){
+  IV_AB = k; IV_TMP = (IVD[k] || []).map(x => ({ ...x })); if (!IV_TMP.length) IV_TMP = [ivFila(k)];
+  const A = IV_ANX[k];
+  $('#ivTit').innerHTML = `<div style="text-align:center;font-weight:700;color:var(--brand)">${esc(A.cod.toUpperCase())} · PRÁCTICA<br>${esc(A.titulo.toUpperCase())}</div><div class="hint" style="text-align:center">${esc(A.alimenta)} · Sin valor fiscal</div>`;
+  const cs = ivCasoActivo(), dat = cs && cs.entrada && cs.entrada.anx && cs.entrada.anx[k];
+  $('#ivCaso').innerHTML = cs ? `<div class="msg warn" style="text-align:justify"><b>Datos del caso · ${esc(cs.titulo)}</b><br>${esc(cs.texto)}${dat && cs.auto ? '<div class="row" style="margin-top:8px"><button class="btn small" type="button" id="ivEjemplo">Llenar con los datos del ejemplo</button></div>' : ''}</div>` : '';
+  $('#ivIntro').textContent = A.intro;
+  $('#ivAyudas').innerHTML = A.cols.map(c => `<div class="rtayuda hidden" id="iva_${c.k}"><b>${esc(c.t)}.</b> ${esc(c.a)}</div>`).join('');
+  ivARender(); $('#ivOverlay').classList.remove('hidden');
+}
+function ivACelda(c, f, i){
+  if (c.opts) return `<select data-vi="${i}" data-vk="${c.k}" style="min-width:${c.k === 'obj' || c.k === 'con' ? 280 : 120}px">${c.opts.map(o => `<option ${o === f[c.k] ? 'selected' : ''}>${esc(o)}</option>`).join('')}</select>`;
+  if (c.calc && IV_OBJ[f.obj] != null) return `<input value="${money(c.calc(f))}" disabled style="text-align:right;min-width:95px" class="rtauto">`;
+  return `<input data-vi="${i}" data-vk="${c.k}" value="${esc(f[c.k] ?? '')}" ${c.num ? 'type="number" step="0.01" min="0" style="text-align:right;min-width:95px"' : `style="min-width:${c.w ? 50 : 110}px"`}>`;
+}
+function ivARender(){
+  const A = IV_ANX[IV_AB];
+  $('#ivHead').innerHTML = '<tr>' + A.cols.map(c => `<th style="${c.w ? 'width:' + c.w + 'px' : ''}">${esc(c.t)} <button type="button" class="rti" data-iva="${c.k}" aria-label="Ayuda">i</button></th>`).join('') + '<th></th></tr>';
+  $('#ivABody').innerHTML = IV_TMP.map((f, i) => '<tr>' + A.cols.map(c => `<td>${ivACelda(c, f, i)}</td>`).join('') + `<td><button type="button" class="btn small danger" data-vdel="${i}" aria-label="Quitar fila">×</button></td></tr>`).join('');
+  ivATotales();
+}
+function ivATotales(){ const t = IV_ANX[IV_AB].totales(IV_TMP); $('#ivTot').innerHTML = t.lineas.map(([a, b]) => `<div><span>${esc(a)}</span><span>${typeof b === 'number' && a.startsWith('Facturas') ? b : money(b)}</span></div>`).join(''); }
+document.addEventListener('input', e => { const i = e.target.dataset && e.target.dataset.vi; if (i == null) return; IV_TMP[+i][e.target.dataset.vk] = e.target.value; ivATotales(); });
+document.addEventListener('change', e => { const i = e.target.dataset && e.target.dataset.vi; if (i == null) return; IV_TMP[+i][e.target.dataset.vk] = e.target.value; if (e.target.dataset.vk === 'obj') ivARender(); else ivATotales(); });
+document.addEventListener('click', e => {
+  const d = e.target.dataset || {};
+  if (d.ivanx) ivAbrir(d.ivanx);
+  if (d.vdel != null){ IV_TMP.splice(+d.vdel, 1); if (!IV_TMP.length) IV_TMP = [ivFila(IV_AB)]; ivARender(); }
+  if (d.iva != null) $('#iva_' + d.iva).classList.toggle('hidden');
+  if (e.target.id === 'ivEjemplo'){ IV_TMP = ivCasoActivo().entrada.anx[IV_AB].map(x => ({ ...x })); ivARender(); }
+  if (e.target.id === 'ivAdd'){ IV_TMP.push(ivFila(IV_AB)); ivARender(); }
+  if (e.target.id === 'ivAGuardar'){ IVD[IV_AB] = IV_TMP.filter(f => ['ruc', 'nom', 'fac', 'base', 'itbms', 'monto'].some(k => f[k])).map(f => IV_AB === 'r95' ? { ...f, ret: ivRet(f) } : f); $('#ivOverlay').classList.add('hidden'); ivCalc(); }
+  if (e.target.id === 'ivACancelar' || e.target.id === 'ivOverlay') $('#ivOverlay').classList.add('hidden');
+});
+
+/* ---- Formulario ---- */
+let IV_LISTO = false, IV_CASO = '', IV_OCULTO = false;
+function ivCelda(c){
+  if (!c) return '<td></td>';
+  let ctl;
+  if (c.anx) ctl = `<button type="button" class="btn small secondary" data-ivanx="${c.anx}" style="white-space:nowrap">Anexo 95</button><input id="iv_${c.n}" class="rtauto" disabled>`;
+  else if (c.in) ctl = `<input id="iv_${c.n}" type="number" step="0.01" min="0" placeholder="0.00">`;
+  else ctl = `<input id="iv_${c.n}" class="rtauto" disabled>`;
+  return `<td><div class="ivcel"><span class="ivn">${c.n}</span>${ctl}</div><div class="hint" id="ivw_${c.n}"></div></td>`;
+}
+function ivRender(){
+  $('#ivCab').innerHTML = IV_CAB.map(c => {
+    let ctl;
+    if (c.opts) ctl = `<select id="ivc_${c.id}">${c.opts.map(o => `<option>${esc(o)}</option>`).join('')}</select>`;
+    else if (c.check) ctl = `<input id="ivc_${c.id}" type="checkbox" style="width:auto">`;
+    else ctl = `<input id="ivc_${c.id}" placeholder="${esc(c.ph || '')}">`;
+    return `<div><label>${esc(c.label)} <button type="button" class="rti" data-ivc="${c.id}" aria-label="Ayuda">i</button></label>${ctl}<div class="rtayuda hidden" id="ivca_${c.id}">${esc(c.ayuda)}</div></div>`;
+  }).join('');
+  $('#ivBody').innerHTML = IV_LIN.map((l, i) => {
+    if (l.s) return `<tr class="rtsec"><td colspan="7">${esc(l.s)}</td></tr><tr class="ivhead"><th></th><th>Tarifa</th>${l.h.map(h => `<th>${esc(h)}</th>`).join('')}<th></th></tr>`;
+    return `<tr><td class="rtlab">${esc(l.t)}</td><td style="text-align:center;width:46px">${esc(l.tar)}</td>${l.c.map(ivCelda).join('')}<td style="width:34px"><button type="button" class="rti" data-ivl="${i}" aria-label="Ayuda">i</button></td></tr>
+      <tr class="ivayuda-row hidden" id="ivl_${i}"><td colspan="7"><div class="rtayuda">${esc(l.a)}</div></td></tr>`;
+  }).join('');
+}
+const ivv = n => { const el = $('#iv_' + n); return el ? Math.max(0, parseFloat(el.value) || 0) : 0; };
+const IV_IN = IV_LIN.flatMap(l => (l.c || []).filter(c => c && c.in).map(c => c.n));
+function ivLeer(){
+  const cab = {}; IV_CAB.forEach(c => { const el = $('#ivc_' + c.id); cab[c.id] = c.check ? el.checked : el.value.trim(); });
+  const v = {}; IV_IN.forEach(n => v[n] = ivv(n));
+  return { cab, v, anx: JSON.parse(JSON.stringify(IVD)) };
+}
+function ivResolver(d){
+  const v = d.v || {}, L = {}, g = n => L[n] || 0;
+  IV_IN.forEach(n => L[n] = +v[n] || 0);
+  [['11', 0.07], ['12', 0.07], ['13', 0.10], ['14', 0.10], ['15', 0.15]].forEach(([n, t]) => L[n + '1'] = r2(g(n) * t));
+  L['19'] = r2(['11', '12', '13', '14', '15', '16', '17', '18'].reduce((s, n) => s + g(n), 0));
+  L['191'] = r2(['111', '121', '131', '141', '151'].reduce((s, n) => s + g(n), 0));
+  L['201'] = r2(g('20') * 0.07); L['211'] = r2(g('191') + g('201'));
+  const tarC = { 0: 0.07, 1: 0.10, 2: 0.15 };
+  [['22', '23', '24', '253'], ['26', '27', '28', '293'], ['30', '31', '32', '333'], ['34', '35', '36', '373']].forEach(grp => {
+    let tot = 0;
+    grp.slice(0, 3).forEach((n, i) => { L[n + '2'] = r2(g(n) + g(n + '1')); L[n + '3'] = r2(L[n + '2'] * tarC[i]); tot += L[n + '3']; });
+    L[grp[3]] = r2(tot);
+  });
+  const loc = ['22', '23', '24', '26', '27', '28', '30', '31', '32', '34', '35', '36'];
+  L['38'] = r2(loc.reduce((s, n) => s + g(n), 0)); L['381'] = r2(loc.reduce((s, n) => s + g(n + '1'), 0)); L['382'] = r2(g('38') + g('381'));
+  L['383'] = r2(g('253') + g('293') + g('333') + g('373'));
+  L['392'] = r2(g('39') + g('391')); L['403'] = r2(g('402') * 0.07);
+  const t19 = g('19'), grav = g('11') + g('12') + g('13') + g('14') + g('15');
+  L['41'] = r2(g('373') + (t19 ? g('293') * (g('17') + g('18')) / t19 : 0));
+  L['42'] = g('253'); L['43'] = r2(t19 ? g('293') * grav / t19 : 0); L['44'] = g('403'); L['45'] = r2(g('42') + g('43') + g('44'));
+  L['46'] = g('333'); L['47'] = r2(t19 ? g('293') * g('16') / t19 : 0); L['48'] = r2(g('46') + g('47'));
+  L['52'] = IV_ANX.r95.totales((d.anx && d.anx.r95) || []).c[52];
+  L['53'] = Math.min(g('53'), g('48'));
+  L['49'] = g('211'); L['50'] = g('45');
+  const cred = r2(g('50') + g('51') + g('52') + g('53'));
+  L['54'] = r2(Math.max(0, cred - g('49'))); L['55'] = r2(Math.max(0, g('49') - cred));
+  L['59'] = r2(g('55') + g('56') + g('57') + g('58'));
+  L['60'] = g('53') > 0 ? 0 : g('48'); L['63'] = r2(g('60') + g('61') - g('62'));
+  const t43 = IV_ANX.i43.totales((d.anx && d.anx.i43) || []); L._i43m = t43.m; L._i43i = t43.i; L._i43n = ((d.anx && d.anx.i43) || []).length;
+  return L;
+}
+function ivCalc(){
+  const d = ivLeer(), L = ivResolver(d);
+  IV_LIN.forEach(l => (l.c || []).forEach(c => { if (c && !c.in){ const el = $('#iv_' + c.n); if (el) el.value = (L[c.n] || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); } }));
+  const aviso = (n, txt) => { const w = $('#ivw_' + n); if (w) w.innerHTML = txt ? `<span style="color:var(--warn)">${txt}</span>` : ''; };
+  aviso('53', (d.v['53'] || 0) > L['48'] ? 'No puede pasar de la casilla 48.' : '');
+  aviso('43', L['293'] && L['19'] ? `Proporción gravada: ${(100 * (L['11'] + L['12'] + L['13'] + L['14'] + L['15']) / L['19']).toFixed(2)} % de las ventas.` : '');
+  aviso('52', IVD.r95.length ? `${IVD.r95.length} retención(es) en el anexo 95.` : '');
+  $('#ivI43Res').innerHTML = IVD.i43.length ? `${IVD.i43.length} factura(s) · compras ${money(L._i43m)} · ITBMS ${money(L._i43i)}. En el 430: compras gravadas ${money(L['382'])} + exentas ${money(L['392'])} = ${money(r2(L['382'] + L['392']))} · ITBMS ${money(L['383'])}.` : 'Todavía no ha registrado facturas en el informe.';
+  return L;
+}
+$('#ivBody').addEventListener('input', ivCalc);
+$('#ivCab').addEventListener('input', ivCalc);
+$('#ivCab').addEventListener('change', ivCalc);
+document.addEventListener('click', e => {
+  const l = e.target.dataset && e.target.dataset.ivl, c = e.target.dataset && e.target.dataset.ivc;
+  if (l != null) $('#ivl_' + l).classList.toggle('hidden');
+  if (c != null) $('#ivca_' + c).classList.toggle('hidden');
+});
+$('#ivVerAyuda').addEventListener('change', e => { $$('.ivayuda-row, #ivCab .rtayuda').forEach(x => x.classList.toggle('hidden', !e.target.checked)); });
+function ivLimpiar(){
+  IV_CAB.forEach(c => { const el = $('#ivc_' + c.id); if (!el) return; if (c.check) el.checked = false; else if (c.opts) el.selectedIndex = 0; else el.value = ''; });
+  $$('#ivBody input:not([disabled])').forEach(el => { el.value = ''; }); IVD = { r95: [], i43: [] };
+  ivCalc(); $('#ivMsgs').innerHTML = '';
+}
+$('#ivLimpiar').addEventListener('click', ivLimpiar);
+function ivCargar(d){
+  ivLimpiar();
+  Object.entries(d.cab || {}).forEach(([k, val]) => { const el = $('#ivc_' + k); if (!el) return; if (el.type === 'checkbox') el.checked = !!val; else el.value = val; });
+  Object.entries(d.v || {}).forEach(([k, val]) => { const el = $('#iv_' + k); if (el && !el.disabled) el.value = val || ''; });
+  IVD = Object.assign({ r95: [], i43: [] }, JSON.parse(JSON.stringify(d.anx || {})));
+  ivCalc();
+}
+
+/* ---- Casos ---- */
+const IV_CASOS = [
+  { id: 'v1', auto: true, titulo: 'Ejemplo resuelto · Boutique Ejemplo, S.A. (retención por tarjetas)',
+    texto: 'Boutique Ejemplo, S.A. (RUC 155701000-2-2020, DV 10) declara el ITBMS de octubre de 2026 (período 202610). Vende ropa y accesorios, todo gravado al 7 %. VENTAS del mes: B/.40,000 sin ITBMS; de ellas, B/.10,000 se cobraron con tarjeta. La administradora de tarjetas, Procesadora de Pagos Ejemplo, S.A. (RUC 155701001-2-2020, DV 11), le retuvo el 50 % del ITBMS de esas ventas, según su liquidación n.º 2610. COMPRAS del mes: mercancía gravada para la venta por B/.25,000 más ITBMS a Textiles Ejemplo, S.A. No tiene saldo a favor del mes anterior ni ventas exentas. En el año anterior facturó menos de B/.1,000,000, así que no presenta el informe de compras.',
+    pista: 'Casilla 11: 40,000 → 111 = 2,800 (débito, 211 y 49). Casilla 22: 25,000 → 223 = 1,750 (crédito directo: 42, 45 y 50). Anexo 95: una fila con la procesadora, documento 2610, monto gravado 10,000, ITBMS causado 700, objeto «PAGO A COMERCIO AFILIADO A SISTEMA DE TC/TD 50%» → retenido 350 → casilla 52. Liquidación: 2,800 − 1,750 − 350 = 700 de impuesto a pagar (55 y 59). Lección: la retención de la tarjeta es un adelanto del impuesto; se resta en la casilla 52 del mes en que se vendió.',
+    entrada: { cab: { ruc: '155701000-2-2020', dv: '10', nombre: 'Boutique Ejemplo, S.A.', periodo: '202610' },
+      v: { 11: 40000, 22: 25000 },
+      anx: { r95: [ { tp: 'JURÍDICO', ruc: '155701001-2-2020', dv: '11', nom: 'Procesadora de Pagos Ejemplo, S.A.', fac: '2610', base: '10000', itbms: '700', obj: 'PAGO A COMERCIO AFILIADO A SISTEMA DE TC/TD 50%', ret: 350 } ], i43: [] } },
+    esperado: { '211': 2800, '45': 1750, '52': 350, '55': 700, '54': 0 },
+    chequeos: [] },
+  { id: 'v2', titulo: 'Caso para la clase · Suministros Práctica, S.A. (retenciones e informe 43)',
+    texto: 'Suministros Práctica, S.A. (RUC 155701100-2-2019, DV 21) vende artículos de limpieza (gravados al 7 %) y medicamentos (exentos). Declara octubre de 2026 (período 202610). VENTAS del mes, sin ITBMS: gravadas B/.60,000 y exentas B/.20,000. RETENCIONES que le hicieron sus clientes: (1) Ministerio Ejemplo (RUC 8-NT-1-1001, DV 50) le pagó la factura 1021 por B/.8,000 + ITBMS B/.560 y le retuvo el 50 %; (2) Supermercados Grandes Ejemplo, S.A. (RUC 155701200-2-2018, DV 30), agente de retención designado, le pagó la factura 1035 por B/.12,000 + ITBMS B/.840 y le retuvo el 50 %; (3) Procesadora de Pagos Ejemplo, S.A. (RUC 155701001-2-2020, DV 11) le retuvo el 50 % del ITBMS de B/.5,000 de ventas con tarjeta (ITBMS B/.350), liquidación 2611. COMPRAS del mes (todas locales): factura 5501 del 05/10/2026 de Química Ejemplo, S.A. (RUC 155701300-2-2017, DV 40): productos de limpieza para la venta, B/.30,000 + ITBMS B/.2,100; factura 778 del 01/10/2026 de Inmobiliaria Ejemplo, S.A. (RUC 155700701-2-2018, DV 26): alquiler del local, B/.6,000 + ITBMS B/.420; factura 9902 del 20/10/2026 de Servicios Eléctricos Ejemplo, S.A. (RUC 155701400-2-2016, DV 45): electricidad, B/.4,000 + ITBMS B/.280; factura 3310 del 12/10/2026 de Laboratorio Farmacéutico Ejemplo, S.A. (RUC 155701500-2-2015, DV 35): medicamentos para la venta, B/.12,000, exentos. El alquiler y la luz sirven a todo el negocio (operaciones mixtas). Saldo a favor de la declaración anterior: B/.300. En 2025 facturó B/.1,150,000, así que también presenta el informe de compras (Formulario 43). Llene el 430 con el anexo 95 y el informe 43.',
+    pista: 'Ventas: 11 = 60,000 (ITBMS 4,200) y 17 = 20,000 → 19 = 80,000; débito 211 = 4,200. Compras: 22 = 30,000 (223 = 2,100); 26 = 10,000 (alquiler 6,000 + luz 4,000; 263 = 700); 39 = 12,000 (exentas). Proporción gravada: 60,000 ÷ 80,000 = 75 % → 43 = 700 × 75 % = 525; 41 (no deducible) = 700 × 20,000 ÷ 80,000 = 175. Crédito 45 = 2,100 + 525 = 2,625. Anexo 95: Ministerio 560 × 50 % = 280 («AL ESTADO 50%»); Supermercados 840 × 50 % = 420 («POR COMPRA DE BIENES/SERVICIOS 50%»); Procesadora 350 × 50 % = 175 («TC/TD 50%») → 52 = 875. Saldo anterior 51 = 300. Liquidación: 4,200 − (2,625 + 300 + 875) = 400 a pagar (55 y 59). Informe 43: cuatro facturas (conceptos 1, 4, 2 y 1; todas locales), compras 52,000 e ITBMS 2,800, que coinciden con el 430 (382 + 392 = 52,000; 383 = 2,800).',
+    entrada: null,
+    esperado: { '211': 4200, '41': 175, '45': 2625, '52': 875, '55': 400, '54': 0, i43m: 52000, i43i: 2800, i43n: 4 },
+    chequeos: [
+      { v: L => L['11'], esp: 60000, msg: 'Casilla 11: solo las ventas gravadas al 7 %, sin el ITBMS.' },
+      { v: L => L['17'], esp: 20000, msg: 'Casilla 17: las ventas de medicamentos son otras operaciones exentas.' },
+      { v: L => L['22'], esp: 30000, msg: 'Casilla 22: la mercancía gravada para la venta es compra directa a operaciones gravadas.' },
+      { v: L => L['26'], esp: 10000, msg: 'Casilla 26: alquiler y electricidad sirven a todo el negocio; son compras para operaciones mixtas.' },
+      { v: L => L['39'], esp: 12000, msg: 'Casilla 39: los medicamentos comprados no pagan ITBMS; son compras exentas.' },
+      { v: L => L['51'], esp: 300, msg: 'Casilla 51: escriba el saldo a favor de la declaración anterior.' },
+      { v: L => L['52'], esp: 875, msg: 'Casilla 52 (anexo 95): una fila por cada retención; revise el objeto de cada una (Estado 50 %, gran comprador 50 %, tarjetas 50 %).' },
+      { v: L => L._i43m, esp: 52000, msg: 'Informe 43: registre las cuatro facturas de compra, incluida la de medicamentos (exenta, ITBMS 0).' },
+      { v: L => L._i43i, esp: 2800, msg: 'Informe 43: el ITBMS pagado total debe coincidir con el ITBMS de las compras del 430 (casilla 383).' } ] }
+];
+function ivCasoActivo(){ return IV_CASOS.find(c => c.id === IV_CASO) || null; }
+function ivOk(c, L){
+  const e = c.esperado, r = {};
+  ['211', '41', '45', '52', '55', '54'].forEach(k => { if (e[k] != null) r[k] = near(L[k], e[k]); });
+  if (e.i43m != null) r.i43 = near(L._i43m, e.i43m) && near(L._i43i, e.i43i) && L._i43n === e.i43n;
+  return { r, ok: Object.values(r).every(Boolean) };
+}
+function ivRenderBar(){
+  $('#ivCasoSel').innerHTML = '<option value="">Práctica libre (sin caso)</option>' + IV_CASOS.map(c => `<option value="${c.id}" ${c.id === IV_CASO ? 'selected' : ''}>${esc(c.titulo)}</option>`).join('');
+  const c = ivCasoActivo();
+  $('#ivToggle').classList.toggle('hidden', !c);
+  $('#ivToggle').textContent = IV_OCULTO ? 'Ver enunciado' : 'Ocultar enunciado';
+  $('#ivCasoTxt').classList.toggle('hidden', IV_OCULTO);
+  let botones = '';
+  if (c && c.auto) botones = '<button class="btn small" type="button" id="ivAuto">Llenar el ejemplo automáticamente</button><button class="btn small secondary" type="button" id="ivPista">Ver la explicación</button>';
+  else if (c && IS_TEACHER) botones = '<button class="btn small secondary" type="button" id="ivPista">Ver solución (solo facilitador)</button>';
+  $('#ivCasoTxt').innerHTML = c ? `<div class="ctit">${esc(c.titulo)}</div><div style="margin-top:4px;text-align:justify">${esc(c.texto)}</div><div class="row" style="margin-top:6px">${botones}<span class="hint">${c.auto ? 'Este ejemplo se llena solo para verlo casilla por casilla.' : 'Llene el 430, el anexo 95 y el informe 43, y pulse «Revisar caso».'}</span></div><div id="ivPistaTxt"></div>` : '<span class="hint">Elija un caso para ver su enunciado, o practique libremente.</span>';
+}
+function ivBorrador(){ return RENTAS.find(x => x.formulario === 'itbms' && (x.caso || '') === (IV_CASO || '')) || null; }
+function ivAbrirBorrador(){
+  const b = ivBorrador(); if (!b || !b.entrada) return;
+  ivCargar(b.entrada);
+  $('#ivMsgs').innerHTML = '<div class="msg ok">Se cargó su borrador (guardado el ' + fdate(b.fecha) + '). Siga trabajando y vuelva a pulsar «Guardar borrador».</div>';
+}
+async function ivGuardarDoc(resuelto, btn){
+  const c = ivCasoActivo(); const d = ivLeer(); const L = ivCalc(); const previo = ivBorrador();
+  const cumple = !!(resuelto || (previo && previo.cumple));
+  const data = { clase: 'renta', formulario: 'itbms', caso: c ? c.id : '', titulo: c ? c.titulo : 'Práctica libre · ITBMS', entrada: d, borrador: !cumple, cumple,
+    res: { deb: L['211'] || 0, cred: L['45'] || 0, ret: L['52'] || 0, pagar: L['55'] || 0, favor: L['54'] || 0 }, fecha: new Date().toISOString() };
+  const go = fn => btn ? busy(btn, fn) : fn();
+  if (previo && previo.dbid){ await go(() => api.update('documentos', { id: previo.dbid }, { data })); Object.assign(previo, data); }
+  else { const row = await go(() => api.insert('documentos', { data })); RENTAS.unshift({ ...data, dbid: row.id }); }
+}
+$('#ivCasoSel').addEventListener('change', e => { IV_CASO = e.target.value; IV_OCULTO = false; ivLimpiar(); ivRenderBar(); ivAbrirBorrador(); });
+$('#ivToggle').addEventListener('click', () => { IV_OCULTO = !IV_OCULTO; ivRenderBar(); });
+$('#ivCasoTxt').addEventListener('click', e => {
+  const c = ivCasoActivo(); if (!c) return;
+  if (e.target.id === 'ivAuto'){ ivCargar(c.entrada); $('#ivRevisar').click(); }
+  if ((e.target.id === 'ivAuto' || e.target.id === 'ivPista') && (c.auto || IS_TEACHER)) $('#ivPistaTxt').innerHTML = `<div class="msg warn" style="margin-top:6px;text-align:justify">💡 ${esc(c.pista)}</div>`;
+});
+$('#ivGuardar').addEventListener('click', async () => {
+  const L = ivCalc();
+  if (!L['19'] && !L['382'] && !L['52']) return errMsg('#ivMsgs', 'La declaración está vacía. Llene al menos las ventas (casilla 11) antes de guardar.');
+  try { await ivGuardarDoc(false, $('#ivGuardar')); okMsg('#ivMsgs', 'Borrador guardado. Cuando vuelva, elija este mismo caso y se cargará solo.'); }
+  catch(err){ errMsg('#ivMsgs', 'No se pudo guardar el borrador: ' + errText(err)); }
+});
+$('#ivRevisar').addEventListener('click', () => {
+  const c = ivCasoActivo(); const L = ivCalc();
+  if (!c) return errMsg('#ivMsgs', 'Elija primero un caso arriba, en «¿Qué caso está resolviendo?».');
+  const { r, ok } = ivOk(c, L), m = [];
+  const linea = (k, bien, mal) => { if (r[k] != null) m.push(r[k] ? '✓ ' + bien : '✗ ' + mal); };
+  linea('211', 'Casilla 211, débito fiscal: correcto.', 'Casilla 211, débito fiscal: no coincide. Revise las ventas gravadas.');
+  linea('41', 'Casilla 41, crédito fiscal no deducible: correcto.', 'Casilla 41, crédito no deducible: no coincide. Revise ventas exentas y compras mixtas.');
+  linea('45', 'Casilla 45, crédito fiscal deducible: correcto.', 'Casilla 45, crédito fiscal deducible: no coincide. Revise cómo clasificó las compras.');
+  linea('52', 'Casilla 52, crédito de retención (anexo 95): correcto.', 'Casilla 52, crédito de retención: no coincide. Revise el anexo 95.');
+  linea('55', 'Casilla 55, impuesto a pagar: correcto.', 'Casilla 55, impuesto a pagar: no coincide.');
+  linea('54', 'Casilla 54, saldo a favor: correcto.', 'Casilla 54, saldo a favor: no coincide.');
+  linea('i43', 'Informe de compras 43: facturas y totales correctos.', 'Informe de compras 43: no coincide con el caso.');
+  const fallas = ok ? [] : (c.chequeos || []).filter(q => !near(q.v(L), q.esp)).map(q => '• ' + q.msg);
+  if (fallas.length) m.push('<b>Dónde revisar:</b>', ...fallas);
+  $('#ivMsgs').innerHTML = `<div class="msg ${ok ? 'ok' : 'warn'}">${m.join('<br>')}${ok ? '<br><b>¡Caso resuelto!</b> <span id="ivReg">Guardando…</span>' : ''}</div>`;
+  if (ok) ivGuardarDoc(true).then(() => { const x = $('#ivReg'); if (x) x.textContent = 'Quedó registrado para el facilitador.'; }).catch(err => { const x = $('#ivReg'); if (x) x.textContent = 'No se pudo registrar: ' + errText(err) + '. Pulse «Guardar borrador».'; });
+});
+function renderItbms(){ if (!IV_LISTO){ ivRender(); IV_LISTO = true; ivRenderBar(); ivCalc(); ivAbrirBorrador(); return; } ivRenderBar(); ivCalc(); }
+const _showIV = show;
+show = function(tab){ _showIV(tab); if (tab === 'itbms') renderItbms(); };
+function ivCumpleDoc(c, x){
+  if (x.cumple === true) return true; if (!x.entrada) return false;
+  try { return ivOk(c, ivResolver(x.entrada)).ok; } catch(err){ return false; }
+}
+
+
 /* ======== Tareas (estudiante) ======== */
 const OBLIG_BASE = [
   'Impuesto sobre la Renta (ISR)',
@@ -2500,13 +2896,14 @@ function filas(){
     const lr = p ? (DC.rentaPorUsuario[p.id] || []) : [];
     const renta = rentaNota(RT_CASOS, c => lr.some(x => x.formulario === 'asalariado' && x.caso === c.id && x.res && rtCumple(c, x.res)));
     const rentaj = rentaNota(RJ_CASOS, c => lr.some(x => x.formulario === 'juridico' && x.caso === c.id && rjCumpleDoc(c, x)));
-    return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas, renta, rentaj };
+    const itbms = rentaNota(IV_CASOS, c => lr.some(x => x.formulario === 'itbms' && x.caso === c.id && ivCumpleDoc(c, x)));
+    return { a, p, docs: docs.length, casos, ev, notaCalc, guardada, tareas, renta, rentaj, itbms };
   });
 }
 function dcProgreso(){
   const tareas = DC.tareas.slice().sort((a, b) => String(a.fecha_entrega).localeCompare(String(b.fecha_entrega)));
   DC.tareas = tareas;
-  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Casos de práctica</th><th class="num">Evaluación simulador</th><th class="num">Renta natural</th><th class="num">Renta jurídica</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
+  $('#pgHead').innerHTML = `<tr><th>Estudiante</th><th>Cuenta</th><th class="num">Docs.</th><th class="num">Casos de práctica</th><th class="num">Evaluación simulador</th><th class="num">Renta natural</th><th class="num">Renta jurídica</th><th class="num">ITBMS</th>${tareas.map(t => `<th class="num">${esc(t.titulo.split('·')[0].trim())}</th>`).join('')}</tr>`;
   const rows = filas();
   $('#pgBody').innerHTML = rows.map(r => `<tr>
     <td>${esc(r.a.nombre || '')}<br><span class="hint">${esc(r.a.email)}</span></td>
@@ -2516,14 +2913,15 @@ function dcProgreso(){
     <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">no la ha guardado</span>'}</td>
     <td class="num"><b>${r.renta.nota}</b><br><span class="hint">${r.renta.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.renta.ej ? ' · ejemplo visto' : ''}</span></td>
     <td class="num"><b>${r.rentaj.nota}</b><br><span class="hint">${r.rentaj.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.rentaj.ej ? ' · ejemplo visto' : ''}</span></td>
+    <td class="num"><b>${r.itbms.nota}</b><br><span class="hint">${r.itbms.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.itbms.ej ? ' · ejemplo visto' : ''}</span></td>
     ${r.tareas.map(v => `<td class="num">${v === '' ? '—' : esc(v)}</td>`).join('')}
   </tr>`).join('') || '<tr><td colspan="5" class="hint">No hay estudiantes autorizados.</td></tr>';
 }
 $('#btnCsv').addEventListener('click', () => {
   if (!DC) return;
   const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
-  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)', 'Renta natural (100)', 'Renta jurídica (100)'].concat(DC.tareas.map(t => t.titulo));
-  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc, r.renta.nota, r.rentaj.nota].concat(r.tareas).map(q).join(';')));
+  const head = ['Estudiante', 'Correo', 'Cuenta', 'Documentos', 'Casos de práctica (100)', 'Evaluación simulador (100)', 'Renta natural (100)', 'Renta jurídica (100)', 'ITBMS (100)'].concat(DC.tareas.map(t => t.titulo));
+  const lines = [head.map(q).join(';')].concat(filas().map(r => [r.a.nombre, r.a.email, r.p ? 'Sí' : 'No', r.docs, r.casos * 20, r.notaCalc, r.renta.nota, r.rentaj.nota, r.itbms.nota].concat(r.tareas).map(q).join(';')));
   const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Notas seminario fiscal ISAE ' + todayISO() + '.csv'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);

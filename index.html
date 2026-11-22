@@ -418,9 +418,10 @@ td textarea.mini{min-width:180px;padding:5px 7px;font-size:13px}
     <div data-view="itbms" class="hidden">
       <style>
         .ivform td{vertical-align:middle}
-        .ivform td.rtlab{min-width:250px}
-        .ivform input{text-align:right;min-width:105px}
-        .ivcel{display:flex;gap:6px;align-items:center;flex-wrap:nowrap}
+        .ivform td.rtlab{min-width:180px}
+        .ivform input{text-align:right;width:104px;min-width:0;padding-left:4px;padding-right:6px}
+        .ivform td{padding:5px 6px}
+        .ivcel{display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
         .ivn{display:inline-block;min-width:34px;padding:2px 6px;border-radius:10px;background:#f6d6d6;color:#7a1f1f;font-weight:700;font-size:11.5px;text-align:center}
         .ivhead th{font-size:12px;color:var(--brand);text-align:center;background:transparent;border:0}
       </style>
@@ -2671,7 +2672,7 @@ $('#ivRevisar').addEventListener('click', () => {
 });
 function renderItbms(){ if (!IV_LISTO){ ivRender(); IV_LISTO = true; ivRenderBar(); ivCalc(); ivAbrirBorrador(); return; } ivRenderBar(); ivCalc(); }
 const _showAncho = show;
-show = function(tab){ _showAncho(tab); document.body.classList.toggle('ancho', tab === 'docente'); };
+show = function(tab){ _showAncho(tab); document.body.classList.toggle('ancho', ['docente', 'itbms', 'compras'].includes(tab)); };
 const _showIV = show;
 show = function(tab){ _showIV(tab); if (tab === 'itbms') renderItbms(); };
 function ivCumpleDoc(c, x){

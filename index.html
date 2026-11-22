@@ -112,6 +112,9 @@ ul.tight li{margin:3px 0}
 .ann h4{margin:0 0 3px;font-size:14.5px}
 .ann .when{font-size:12px;color:var(--muted)}
 .ann p{margin:4px 0 0;font-size:13.5px;white-space:pre-line}
+body.ancho main{max-width:none}
+#pgBody td,#pgHead th{padding:6px 8px;font-size:13px}
+#pgHead th{white-space:normal;line-height:1.2}
 .stats{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
 .stat{background:var(--soft);border-radius:8px;padding:10px 12px}
 .stat b{display:block;font-size:20px;color:var(--brand)}
@@ -2667,6 +2670,8 @@ $('#ivRevisar').addEventListener('click', () => {
   if (ok) ivGuardarDoc(true).then(() => { const x = $('#ivReg'); if (x) x.textContent = 'Quedó registrado para el facilitador.'; }).catch(err => { const x = $('#ivReg'); if (x) x.textContent = 'No se pudo registrar: ' + errText(err) + '. Pulse «Guardar borrador».'; });
 });
 function renderItbms(){ if (!IV_LISTO){ ivRender(); IV_LISTO = true; ivRenderBar(); ivCalc(); ivAbrirBorrador(); return; } ivRenderBar(); ivCalc(); }
+const _showAncho = show;
+show = function(tab){ _showAncho(tab); document.body.classList.toggle('ancho', tab === 'docente'); };
 const _showIV = show;
 show = function(tab){ _showIV(tab); if (tab === 'itbms') renderItbms(); };
 function ivCumpleDoc(c, x){
@@ -3076,12 +3081,12 @@ function dcProgreso(){
     <td>${esc(r.a.nombre || '')}<br><span class="hint">${esc(r.a.email)}</span></td>
     <td>${r.p ? '<span class="pill ok">Creada</span>' : '<span class="pill err">Sin crear</span>'}</td>
     <td class="num">${r.docs}</td>
-    <td class="num"><b>${r.casos * 20}</b><br><span class="hint">${r.casos} de ${CASES.length} casos</span></td>
-    <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">no la ha guardado</span>'}</td>
-    <td class="num"><b>${r.renta.nota}</b><br><span class="hint">${r.renta.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.renta.ej ? ' · ejemplo visto' : ''}</span></td>
-    <td class="num"><b>${r.rentaj.nota}</b><br><span class="hint">${r.rentaj.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.rentaj.ej ? ' · ejemplo visto' : ''}</span></td>
-    <td class="num"><b>${r.itbms.nota}</b><br><span class="hint">${r.itbms.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.itbms.ej ? ' · ejemplo visto' : ''}</span></td>
-    <td class="num"><b>${r.compras.nota}</b><br><span class="hint">${r.compras.ok ? 'caso de clase ✓' : 'caso de clase pendiente'}${r.compras.ej ? ' · ejemplo visto' : ''}</span></td>
+    <td class="num"><b>${r.casos * 20}</b><br><span class="hint">${r.casos} de ${CASES.length}</span></td>
+    <td class="num" title="${r.ev.map((x, i) => 'Caso ' + (i + 1) + (x.ok ? ' ✓' : ' ✗')).join(' · ')}"><b>${r.notaCalc}</b>${r.guardada ? '' : '<br><span class="hint">sin guardar</span>'}</td>
+    <td class="num"><b>${r.renta.nota}</b><br><span class="hint">${r.renta.ok ? 'clase ✓' : 'pendiente'}${r.renta.ej ? ' · ej. ✓' : ''}</span></td>
+    <td class="num"><b>${r.rentaj.nota}</b><br><span class="hint">${r.rentaj.ok ? 'clase ✓' : 'pendiente'}${r.rentaj.ej ? ' · ej. ✓' : ''}</span></td>
+    <td class="num"><b>${r.itbms.nota}</b><br><span class="hint">${r.itbms.ok ? 'clase ✓' : 'pendiente'}${r.itbms.ej ? ' · ej. ✓' : ''}</span></td>
+    <td class="num"><b>${r.compras.nota}</b><br><span class="hint">${r.compras.ok ? 'clase ✓' : 'pendiente'}${r.compras.ej ? ' · ej. ✓' : ''}</span></td>
     ${r.tareas.map(v => `<td class="num">${v === '' ? '—' : esc(v)}</td>`).join('')}
   </tr>`).join('') || '<tr><td colspan="5" class="hint">No hay estudiantes autorizados.</td></tr>';
 }

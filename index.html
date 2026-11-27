@@ -3056,7 +3056,7 @@ const P3_COLS = [
   { k: 'id', t: '1 · ID planilla', txt: 1, s: 1 }, { k: 'per', t: '2 · Período', txt: 1, s: 1 }, { k: 'tipo', t: '3 · Tipo', txt: 1, s: 1 },
   { k: 'doc', t: '4 · Número documento', txt: 1 }, { k: 'dv', t: '5 · DV', txt: 1, s: 1 }, { k: 'nom', t: '6 · Nombre', txt: 1 },
   { k: 'sal', t: '7 · Salario' }, { k: 'sue', t: '8 · Sueldo' }, { k: 'hex', t: '9 · Horas extras' }, { k: 'vac', t: '10 · Vacaciones' },
-  { k: 'com', t: '11 · Comisiones' }, { k: 'dtm', t: '16 · DTM (décimo)' }, { k: 'rng', t: '25 · Renta neta gravable' },
+  { k: 'com', t: '11 · Comisiones' }, { k: 'dtm', t: '16 · DTM (décimo)' }, { k: 'rng', t: '25 · Renta neta gravable (se calcula sola)', calc: 1 },
   { k: 'isr', t: '26 · Impuesto renta' }, { k: 'ret', t: '28 · Retenciones salario' }
 ];
 const P3_CASO = { id: 'q1', titulo: 'Caso para la clase · Librería Ejemplo, S.A. (agosto 2026)',
@@ -3071,16 +3071,18 @@ const P3_CASO = { id: 'q1', titulo: 'Caso para la clase · Librería Ejemplo, S.
 const P3_NOM = { id: 'ID de planilla', per: 'período', tipo: 'tipo de documento', doc: 'número de documento', dv: 'DV', sal: 'salario', sue: 'sueldo', hex: 'horas extras', vac: 'vacaciones', com: 'comisiones', dtm: 'décimo (DTM)', rng: 'renta neta gravable', isr: 'impuesto renta', ret: 'retenciones' };
 let P3_ROWS = [], P3_LISTO = false, P3_OCULTO = false;
 const p3Fila = () => { const f = {}; P3_COLS.forEach(c => f[c.k] = ''); return f; };
+function p3Calc(f){ const v = r2(['sue', 'hex', 'vac', 'com', 'dtm'].reduce((s, k) => s + (+f[k] || 0), 0)); f.rng = v ? v.toFixed(2) : ''; }
 function p3Rows(){
+  P3_ROWS.forEach(p3Calc);
   if (!P3_ROWS.length) P3_ROWS = [p3Fila()];
-  $('#p3Body').innerHTML = P3_ROWS.map((f, i) => '<tr>' + P3_COLS.map(c => `<td><input data-q3i="${i}" data-q3k="${c.k}" value="${esc(f[c.k] ?? '')}" class="${c.txt ? 'p3txt' : ''} ${c.s ? 'p3s' : ''}" ${c.txt ? '' : 'type="number" step="0.01" min="0"'}><div id="p3w_${i}_${c.k}" style="color:#a23b3b;font-size:10.5px"></div></td>`).join('') + `<td><button type="button" class="btn small danger" data-q3del="${i}" aria-label="Quitar">×</button></td></tr>`).join('');
+  $('#p3Body').innerHTML = P3_ROWS.map((f, i) => '<tr>' + P3_COLS.map(c => `<td><input data-q3i="${i}" data-q3k="${c.k}" value="${esc(f[c.k] ?? '')}" class="${c.txt ? 'p3txt' : ''} ${c.s ? 'p3s' : ''} ${c.calc ? 'rtauto' : ''}" ${c.calc ? 'disabled' : c.txt ? '' : 'type="number" step="0.01" min="0"'}><div id="p3w_${i}_${c.k}" style="color:#a23b3b;font-size:10.5px"></div></td>`).join('') + `<td><button type="button" class="btn small danger" data-q3del="${i}" aria-label="Quitar">×</button></td></tr>`).join('');
   p3Tot();
 }
 function p3Tot(){
   const sum = k => r2(P3_ROWS.reduce((s, f) => s + (+f[k] || 0), 0));
   $('#p3Foot').innerHTML = '<tr><td colspan="6"><b>Totales</b></td>' + P3_COLS.slice(6).map(c => `<td style="text-align:right"><b>${sum(c.k).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</b></td>`).join('') + '<td></td></tr>';
 }
-document.addEventListener('input', e => { const i = e.target.dataset && e.target.dataset.q3i; if (i == null) return; P3_ROWS[+i][e.target.dataset.q3k] = e.target.value; p3Tot(); });
+document.addEventListener('input', e => { const i = e.target.dataset && e.target.dataset.q3i; if (i == null) return; const f = P3_ROWS[+i]; f[e.target.dataset.q3k] = e.target.value; p3Calc(f); const c = document.querySelector('[data-q3i="' + i + '"][data-q3k="rng"]'); if (c) c.value = f.rng; p3Tot(); });
 document.addEventListener('click', e => {
   const d = e.target.dataset || {};
   if (d.q3del != null){ P3_ROWS.splice(+d.q3del, 1); p3Rows(); }
@@ -3127,7 +3129,7 @@ $('#p3Revisar').addEventListener('click', () => {
   const r = p3Evaluar(P3_ROWS);
   r.marcas.forEach(([i, k]) => { const w = $(`#p3w_${i}_${k}`); if (w) w.textContent = 'revisar'; });
   const m = [r.ok ? '✓ El Informe 03 está correcto.' : '✗ Hay datos que no coinciden (marcados con «revisar»).'];
-  if (!r.ok) m.push('<b>Dónde revisar:</b>', ...r.errores.map(x => '• ' + esc(x)), 'Recuerde: décimo = devengado en el período ÷ 12; renta neta gravable = sueldo + horas extras + vacaciones + comisiones + décimo; el ISR viene de la planilla de la CSS.');
+  if (!r.ok) m.push('<b>Dónde revisar:</b>', ...r.errores.map(x => '• ' + esc(x)), 'Recuerde: décimo = devengado en el período ÷ 12 (la renta neta gravable se calcula sola); el ISR viene de la planilla de la CSS.');
   $('#p3Msgs').innerHTML = `<div class="msg ${r.ok ? 'ok' : 'warn'}">${m.join('<br>')}${r.ok ? '<br><b>¡Caso resuelto!</b> <span id="p3Reg">Guardando…</span>' : ''}</div>`;
   if (r.ok) p3GuardarDoc(true).then(() => { const x = $('#p3Reg'); if (x) x.textContent = 'Quedó registrado para el facilitador.'; }).catch(err => { const x = $('#p3Reg'); if (x) x.textContent = 'No se pudo registrar: ' + errText(err) + '.'; });
 });
